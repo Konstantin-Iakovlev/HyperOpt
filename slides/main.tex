@@ -1,0 +1,285 @@
+\documentclass[aspectratio=169]{beamer}
+\beamertemplatenavigationsymbolsempty
+\usecolortheme{beaver}
+\setbeamertemplate{blocks}[rounded=true, shadow=true]
+\setbeamertemplate{footline}[page number]
+
+
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage[english,russian]{babel}
+
+
+\usepackage[utf8]{inputenc}
+\usepackage{amssymb,amsfonts,amsmath,mathtext}
+%\usepackage{subfig}
+\usepackage{tikz}
+\usepackage{xcolor}
+\usepackage[all]{xy} % xy package for diagrams
+\usepackage{array}
+\usepackage{multicol}% many columns in slide
+\usepackage{hyperref}% urls
+\usepackage{hhline}%tables
+
+
+\def\bw{\mathbf{w}}
+\def\balpha{\boldsymbol{\alpha}}
+
+% Your figures are here:
+\graphicspath{ {fig/} {../fig/} }
+
+\definecolor{ao(english)}{rgb}{0.0, 0.5, 0.0}
+\definecolor{bleudefrance}{rgb}{0.19, 0.55, 0.91}
+
+%----------------------------------------------------------------------------------------------------------
+\title[\hbox to 56mm{Feature generation}]{Поиск согласованных нейросетевых моделей в задаче мультидоменного обучения}
+\author{К.\,Д.~Яковлев\inst{1} \and \and О.\,Ю.~Бахтеев\inst{1,2}\and В.\,В.~Стрижов\inst{1,2} \\
+\tt{\footnotesize \{iakovlev.kd, bakhteev, strijov\}@phystech.edu }}
+\institute{\inst{1} Москва, Московский физико-технический институт \and
+\inst{2} Москва, Вычислительный центр им. А.А. Дородницына ФИЦ ИУ РАН} \date{2023}
+%----------------------------------------------------------------------------------------------------------
+\begin{document}
+%----------------------------------------------------------------------------------------------------------
+\begin{frame}
+\thispagestyle{empty}
+\maketitle
+\end{frame}
+%-----------------------------------------------------------------------------------------------------
+\begin{frame}{Цель исследования}
+
+\begin{block}{Цель} 
+  Предложить градиентный метод оптимизации гиперпараметров с ассимптотически несмещенным гиперградиентом.
+\end{block}
+
+~\\
+\begin{block}{Проблема}
+  Существующие методы не гарантируют ассимптотически несмещенный градиент без увеличения вычислительных затрат.
+\end{block}
+~\\
+\begin{block}{Метод решения}
+  Предлагаемый метод основан на аггрегации жадных гиперградиентов без дополнительных вычислительных затрат.
+\end{block}
+
+\end{frame}
+
+%----------------------------------------------------------------------------------------------------------
+
+
+% \begin{frame}{Основная литература}
+% \begin{thebibliography}{1}
+
+
+% \bibitem{darts} 
+% Hanxiao Liu and Karen Simonyan and Yiming Yang. 
+% \textit{DARTS: Differentiable Architecture Search}.
+% CoRR, 2018.
+
+
+% \bibitem{wang2021multi}
+% Wang, Q., Ke, J., Greaves, J., Chu, G.,
+% Bender, G., Sbaiz, L., Go, A., Howard, A., Yang, M.,
+% Gilbert, J. \& Others
+% \textit{Multi-path neural networks for on-device multi-domain visual classification}.
+% CoRR, 2021.
+
+% \bibitem{darts-cc}
+% Yakovlev, K., Grebenkova, O., Bakhteev, O. \& Strijov, V.
+% \textit{Neural Architecture Search with Structure Complexity Control}.
+% CoRR, 2022.
+
+% \end{thebibliography}	
+% \end{frame}
+
+\begin{frame}{Постановка задачи оптимизации гиперпараметров}
+\begin{itemize}
+  \item Пусть задан вектор параметров модели $\mathbf{w} \in \mathbb{R}^p$ и вектор гиперпараметров
+  $\boldsymbol{\alpha} \in \mathbb{R}^h$. задача оптимизации:
+  \begin{align*}
+    \boldsymbol{\alpha}^* &= \arg\min_{\boldsymbol{\alpha}}\mathcal{L}_2(\mathbf{w}^*, \boldsymbol{\alpha}), \\
+    \mathrm{s.t.} \quad \mathbf{w}^* &= \arg\min_{\mathbf{w}}\mathcal{L}_1(\mathbf{w}, \boldsymbol{\alpha}).
+  \end{align*}
+  \item Пусть внутренняя задача решается с помощью оптимизатора $\mathbf{\Phi}(., .)$:
+  \begin{align*}
+    \mathbf{w}_{t + 1}(\boldsymbol{\alpha}) = \mathbf{\Phi}(\mathbf{w}_t, \boldsymbol{\alpha}), \quad
+    t = \overline{1, T}.
+  \end{align*}
+  \item Гиперградиент запишется как:
+  \begin{align*}
+    &\nabla_{\boldsymbol{\alpha}}\mathcal{L}_2(\mathbf{w}_T(\boldsymbol{\alpha}), \boldsymbol{\alpha}) = 
+    \frac{\partial}{\partial \boldsymbol{\alpha}}\mathcal{L}_2(\mathbf{w}_T(\boldsymbol{\alpha}), \boldsymbol{\alpha}) + 
+    \sum_{t=1}^T\mathbf{B}_t\mathbf{A}_{t+1}\ldots\mathbf{A}_T
+    \frac{\partial \mathcal{L}_2(\mathbf{w}_T(\boldsymbol{\alpha}), \boldsymbol{\alpha})}{\partial\mathbf{w}}, \\
+    &\mathbf{B}_t = \frac{\partial\mathbf{\Phi}(\mathbf{w}_{t-1}, \boldsymbol{\alpha})}{\partial\boldsymbol{\alpha}},
+    \quad \mathbf{A}_t = \frac{\partial\mathbf{\Phi}(\mathbf{w}_{t-1}, \boldsymbol{\alpha})}{\partial\boldsymbol{w}_{t - 1}}.
+  \end{align*}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{Аппроксимация гиперградиента}
+  \begin{itemize}
+    \item Пусть задано $\gamma \in (0, 1)$. Тогда аппроксимация гиперградиента запишется как:
+  \begin{align*}
+    \hat{\nabla}_{\boldsymbol{\alpha}} = \frac{\partial}{\partial \boldsymbol{\alpha}}\mathcal{L}_2(\mathbf{w}_T(\boldsymbol{\alpha}), \boldsymbol{\alpha}) +
+    \sum_{t=1}^T \mathbf{B}_t\frac{\partial\mathcal{L}_2(\mathbf{w}_t, \boldsymbol{\alpha})}{\partial \mathbf{w}_t}\gamma^{T-t}.
+  \end{align*}
+  \item предлположения:
+  \begin{enumerate}
+    \item $\mathcal{L}_1(., \boldsymbol{\alpha})$, $\mathcal{L}_2(., \boldsymbol{\alpha})$ являются $L$-гладкими 
+    и $\mu$-сильно выпуклыми.
+    \item $\frac{\partial^2\mathcal{L}_1(., \boldsymbol{\alpha})}{\partial\mathbf{w}\partial\mathbf{w}^\top}$ является $H_w$-липшицева.
+    \item $1 - \eta L \leq \gamma 1 - \eta\mu$
+    \item $\|\frac{\partial\mathcal{L}_1(\mathbf{w}, \boldsymbol{\alpha})}{\partial\boldsymbol{\alpha}\partial\mathbf{w}^\top}\| \leq B$.
+    \item $\frac{\partial^2\mathcal{L}_1(., \boldsymbol{\alpha})}{\partial\boldsymbol{\alpha}\partial\mathbf{w}^\top}$ является $M_b$-липшицевой.
+    \item $(\frac{\partial^2\mathcal{L}_1(., \boldsymbol{\alpha})}{\partial\boldsymbol{\alpha}\partial\mathbf{w}^\top})^\top
+    (\frac{\partial^2\mathcal{L}_1(., \boldsymbol{\alpha})}{\partial\boldsymbol{\alpha}\partial\mathbf{w}^\top}) \succeq \kappa \mathbf{I}$.
+  \end{enumerate}
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}{Ассимптотическая несмещенность гиперградиента}
+
+  \begin{block}{Теорема (Яковлев, 2023)}
+    Пусть выполнены предположения (1-6). Тогда:
+    \begin{align*}
+     &\|\hat{\nabla}_{\boldsymbol{\alpha}} - \nabla_{\boldsymbol{\alpha}}\|_2 \leq \frac{2LB\|\mathbf{w}_0 - \mathbf{w}_*\|\sqrt{1 - \eta\mu}^T}{\sqrt{1 - \eta\mu}^{-1} - 1} +
+     B\|\frac{\partial\mathcal{L}_2(\mathbf{w}_T, \boldsymbol{\alpha})}{\partial\mathbf{w}}\| \cdot \\
+     &\left[
+      \frac{1}{\eta}(\frac{1}{\mu} - \frac{1}{L} + \frac{1}{L}(1 - \eta\mu)^T) + 2\eta H_w((T - 1)\sqrt{1 - \eta\mu}^T- 
+      \frac{\sqrt{1 - \eta\mu}^{T-1} - (1 - \eta\mu)^T}{\sqrt{1 - \eta\mu}^{-1} - 1})
+     \right].
+    \end{align*}
+  \end{block}
+
+  \begin{block}{Теорема (Яковлев, 2023)}
+    Предложенный градиентный метод оптимизации гиперпараметров предоставляет ассимптотически точный
+    гиперградиент с ростом номера эпохи внутренней оптимизации.
+  \end{block}
+  
+\end{frame}
+
+
+
+\begin{frame}{Постановка вычислительного эксперимента}
+  \begin{itemize}
+    \item Цель -- сравнение качества предложенного подхода с существующими методами подсчета гиперградиента.
+    \item Эксперимент проводится на задаче очистки обучающей выборки. Приводится точность предсказания на отложенной выборке.
+    \item Сравниваются следующие методы: DrMAD, IFT, Truncated Backpropagation.
+  \end{itemize}
+
+  \begin{table}[h]
+    \centering
+    \begin{tabular}{c|c|c}
+        \textbf{Method} & \textbf{Valid. Acc.} & $\#$\textbf{JVPs} \\ \hline
+        Truncated backpropagation (Lukethina) & 72.5 & $1 \; (1)$ \\
+        DrMAD & 69.8 & $99 \; (2T - 1)$ \\
+        IFT(9, 5) & 70.3 & $50 \;  ((N + 1)K)$ \\
+        IFT(4, 10) & 70.7 & $50 \; ((N + 1)K)$ \\
+        Proposed ($\gamma = 0.99$) & $\textbf{73.5}^*$ & $50 \; (T)$ \\ \hline
+    \end{tabular}
+\end{table}
+Из таблицы видно, что предложенный метод превосходит существующие методы оптимизации гиперпараметров в терминах 
+точности предсказаний на отложенной выборке, имея сопоставимые вычислительные затраты.
+\end{frame}
+
+
+
+
+
+
+% \begin{frame}{Постановка вычислительного эксперимента}
+
+% \begin{itemize}
+% \item Цель -- получение зависимости качества работы мультимодели и
+% количества ее параметров в зависимости от используемого регуляризатора.
+% \item Эксперимент проводится на подвыборке MNIST. В качестве доменов рассматриваются
+% изображения, повернутые на угол, кратный $\pi/2$. Число доменов меняется от 1 до 4.
+%  Сравниваются следующие модели:
+% мультимодель со структурной регуляризацией, мультимодель с регуляризацией скрытых представлений,
+% а также модель, не учитывающая разбиение выборки на домены.
+% \item Оценивается средняя точность (accuracy) на тестовой выборке для каждого из доменов.
+% Также приводится количество параметров для каждой модели.
+% \end{itemize}
+
+% \end{frame}
+
+
+% \begin{frame}{Результаты вычислительного эксперимента}
+%   \begin{table}[h!]
+%     \centering
+%      \begin{tabular}{||c c c||}
+%      \hline
+%      model & accuracy & num. of params \\ [0.5ex] \hline\hline
+%      \multicolumn{3}{|| c ||}{1 domain} \\
+%       single & 60.59 & 5029 \\ \hline \hline 
+
+%      \multicolumn{3}{|| c ||}{2 domains} \\
+%      single, union & 66.95 & 6560 \\
+%      multimodel, struct & 62.86 & \textbf{5248} \\
+%      multimodel, contr & \textbf{69.64} & 9328 \\
+%      \hline \hline
+
+%      \multicolumn{3}{|| c ||}{3 domains} \\
+%      single, union & 63.02 & 5685\\
+%      multimodel, struct & 64.85 & \textbf{6826}\\
+%      multimodel, contr & \textbf{65.01} & 12096 \\
+%      \hline\hline
+
+%      \multicolumn{3}{|| c ||}{4 domains} \\
+%      single, union & 67.16 & 6560\\
+%      multimodel, struct & 63.15 & \textbf{7872}\\
+%      multimodel, contr & \textbf{67.98} & 13685 \\
+%      \hline\hline
+%      \end{tabular}
+%     \end{table}
+% \end{frame}
+
+
+% \begin{frame}{Вычислтельный эксперимент на задче языкового моделирования}
+%   \begin{enumerate}
+%     \item Задача языкового моделирования решалась на выборке IWSLT14.
+%     \item Расматривались одиночные модели, решающие задачу на одном домене и на
+%     объединении доменов, а также предлагаемая мультимодель.
+%   \end{enumerate}
+%   \begin{table}
+%     \centering
+%     \begin{tabular}{|c|c|c|}
+%       \hline
+%       \textbf{Model} & \textbf{En, ppl} & \textbf{De, ppl} \\ \hline
+%       Single, En & \textbf{59.35} & - \\ 
+%       Single, De & - & - \\ \hline
+%       Single, En+De & 72.68 & 82.15 \\
+%       Multimodel & \textbf{64.91} & \textbf{74.06} \\ \hline
+%     \end{tabular}
+%   \end{table} 
+% \end{frame}
+
+
+
+\begin{frame}{Заключение}
+    % \begin{itemize}
+    % \item Рассмотрена задача поиска архитектуры модели глубокого
+    % обучения на мультидоменных данных. Задача рассматривалась как
+    % задача мультимоделирования.
+    % \item Предложены два метода регуляризации: регуляризация структуры и регуляризация
+    % пространства скрытых представлений модели.
+    % \item Продемонстрирована работоспособность предлагаемого решения. При использовании
+    % первого регуляризатора мультимодель имеет меньшее число параметров. При использовании
+    % второго регуляризатора модель имеет лучшую точность классификации.
+    % \item В дальнейшем планируется провести вычислительный эксперимент на задаче
+    % мультиязычного языкового моделирования.
+    % \end{itemize}
+    \begin{itemize}
+      \item Рассмотрена задача оптимизации гиперпараметров.
+      \item Предложен метод оптимизации гиперпараметров с ассимптотически несмещенным гиперградиентом.
+      \item Продемонстрирована работоспособность предлагаемого решения.
+    \end{itemize}
+\end{frame}
+
+%----------------------------------------------------------------------------------------------------------
+\end{document} 
