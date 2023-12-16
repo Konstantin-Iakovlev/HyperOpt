@@ -12,6 +12,8 @@
 \usepackage{subcaption}
 \usepackage{float}
 \usepackage[english,russian]{babel}
+\usepackage{xcolor}
+
 
 
 \usepackage[utf8]{inputenc}
@@ -28,6 +30,10 @@
 
 \def\bw{\mathbf{w}}
 \def\balpha{\boldsymbol{\alpha}}
+
+\definecolor{dark_green}{rgb}{0, 0.788, 0}
+\definecolor{dark_red}{rgb}{0.9, 0, 0}
+
 
 % Your figures are here:
 \graphicspath{ {fig/} {../fig/} }
@@ -52,18 +58,39 @@
 \begin{frame}{Цель исследования}
 
 \begin{block}{Цель} 
-  Предложить градиентный метод оптимизации гиперпараметров с ассимптотически несмещенным гиперградиентом.
+  Предложить градиентный метод оптимизации гиперпараметров с линейейной по количеству параметров и гиперпараметров
+  сложностью итерации и затратами памяти.
 \end{block}
 
 ~\\
 \begin{block}{Проблема}
-  Существующие методы не гарантируют ассимптотически несмещенный градиент без увеличения вычислительных затрат.
+  Существующие методы не гарантируют выполнение следующих условий одновременно: 1) онлайн оптимизация,
+  2) отсутствие смещения из-за короткого горизонта, 3) линейная сложность итерации и затраты памяти.
 \end{block}
 ~\\
 \begin{block}{Метод решения}
   Предлагаемый метод основан на аггрегации жадных гиперградиентов без дополнительных вычислительных затрат.
 \end{block}
 
+\end{frame}
+
+
+\begin{frame}{Аггрегация жадных гиперградиентов}
+  Пусть задано $\gamma \in (0, 1)$. Тогда аппроксимация гиперградиента запишется как:
+  \begin{align*}
+    \hat{\nabla}_{\boldsymbol{\alpha}} = \frac{\partial}{\partial \boldsymbol{\alpha}}\mathcal{L}_2(\mathbf{w}_T(\boldsymbol{\alpha}), \boldsymbol{\alpha}) +
+    \sum_{t=1}^T \mathbf{B}_t\frac{\partial\mathcal{L}_2(\mathbf{w}_t, \boldsymbol{\alpha})}{\partial \mathbf{w}_t}\gamma^{T-t}.
+  \end{align*}
+  \begin{table}
+    \begin{tabular}{c|c|c|c|c|c}
+       & IFT & RMAD & DrMAD & TruncBP & Proposed \\
+      Онлайн оптимизация & \color{dark_red}{\texttimes} & \color{dark_green}{\checkmark} & \color{dark_red}{\texttimes} & \color{dark_green}{\checkmark} & \color{dark_green}{\checkmark} \\
+      Длинный горизонт & \color{dark_green}{\checkmark} & \color{dark_green}{\checkmark} & \color{dark_green}{\checkmark} & \color{dark_red}{\texttimes} & \color{dark_green}{\checkmark} \\
+      линейная сложность & \color{dark_green}{\checkmark} & \color{dark_red}{\texttimes} & \color{dark_green}{\checkmark} & \color{dark_green}{\checkmark} & \color{dark_green}{\checkmark} \\
+      
+    \end{tabular}
+  \end{table}
+  
 \end{frame}
 
 %----------------------------------------------------------------------------------------------------------
@@ -157,8 +184,11 @@
   \end{block}
 
   \begin{block}{Теорема (Яковлев, 2023)}
-    Предложенный градиентный метод оптимизации гиперпараметров предоставляет ассимптотически точный
-    гиперградиент с ростом номера эпохи внутренней оптимизации.
+    Пусть $\mathcal{L}_2 = \mathcal{L}_2(\bw)$. Тогда найдется $c > 0$:
+    \begin{align*}
+      \hat{\nabla}_{\boldsymbol{\alpha}}^\top\nabla_{\boldsymbol{\alpha}} \geq c\|\nabla_{\bw}\mathcal{L}_2(\bw_T, \boldsymbol{\alpha})\|_2^2.
+    \end{align*}
+    То есть, выполнено достаточное условие спуска.
   \end{block}
   
 \end{frame}
@@ -276,7 +306,8 @@
     % \end{itemize}
     \begin{itemize}
       \item Рассмотрена задача оптимизации гиперпараметров.
-      \item Предложен метод оптимизации гиперпараметров с ассимптотически несмещенным гиперградиентом.
+      \item Предложен метод оптимизации гиперпараметров, удовлетворяющий одновременно трем условиям:
+      1) онлайн оптимизация, 2) отсутствие смещения из-за короткого горизонта, 3) линейная сложность итерации и затраты памяти.
       \item Продемонстрирована работоспособность предлагаемого решения.
     \end{itemize}
 \end{frame}
