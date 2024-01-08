@@ -4,7 +4,7 @@ import jax.numpy as jnp
 import haiku as hk
 from train_state import create_dw_train_state
 from model import CNN
-from dataset import get_dataloaders
+from dataset import get_dataloaders_cifar
 import numpy as np
 from hpo_algs import *
 from argparse import ArgumentParser
@@ -39,7 +39,7 @@ def main():
                     'test_loss': [],
                     'test_accuracy': []} for seed in [args.seed]}
 
-    conv_net = hk.transform_with_state(lambda x, t: CNN()(x, t))
+    conv_net = hk.transform_with_state(lambda x, t: hk.nets.ResNet18(10)(x, t))
     wnet = hk.transform(lambda x: hk.nets.MLP([args.wnet_hidden, 1],
                                             activation=jax.nn.tanh, activate_final=False)(x))
 
@@ -48,9 +48,9 @@ def main():
     np.random.seed(seed)
     torch.manual_seed(seed)
     state = create_dw_train_state(conv_net, wnet, jax.random.PRNGKey(seed),
-                                learning_rate=1e-2, alpha_lr=1e-2)
+                                learning_rate=1e-2, alpha_lr=1e-2, input_shape=[32, 32, 3])
 
-    trainloader, valloader, _ = get_dataloaders(args.corruption, batch_size=64)
+    trainloader, valloader, testloader = get_dataloaders_cifar(args.corruption, batch_size=64)
     method, m_params = parse_method(args.method)
     for outer_step in tqdm(range(300)):
         
@@ -78,11 +78,9 @@ def main():
 
         # eval
         if outer_step % 10 == 0 and outer_step > 0:
-            for val_id, (x, y) in enumerate(valloader):
+            for _, (x, y) in enumerate(testloader):
                 val_batch = {'image': jnp.asarray(x), 'label': jnp.asarray(y)}
                 state = compute_metrics(state=state, batch=val_batch)
-                if val_id >= 99:
-                    break
             for metric,value in state.metrics.compute().items():
                 metrics_history[seed][f'test_{metric}'].append(value.item())
     acc_arr = np.stack([metrics_history[s]['test_accuracy'] for s in [seed]], axis=0)
