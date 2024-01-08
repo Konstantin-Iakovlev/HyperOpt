@@ -19,6 +19,8 @@ def parse_method(method: str):
         return 'proposed', float(method.split('_')[-1])
     elif 'IFT' in method:
         return 'IFT', int(method.split('_')[-1])
+    elif method == 'baseline':
+        return 'baseline', None
     else:
         return ValueError('Unknorn method: ' + method)
 
@@ -65,6 +67,10 @@ def main():
             state, g_so = drmad_grad(state, batches, val_batch)
         elif method == 'IFT':
             state, g_so = IFT_grad(state, batches, val_batch, m_params)
+        elif method == 'baseline':
+            g_so = jax.tree_util.tree_map(jnp.zeros_like, state.h_params)
+            for batch in batches:
+                state = inner_step_baseline(state, batch)
         else:
             raise ValueError('Unknown ' + method)
         

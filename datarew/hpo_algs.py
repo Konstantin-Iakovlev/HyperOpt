@@ -46,6 +46,14 @@ def inner_step(state: DataWTrainState, batch):
 
 
 @jax.jit
+def inner_step_baseline(state: DataWTrainState, batch):
+    grad_fn = jax.value_and_grad(loss_fn_val, argnums=0, has_aux=True)
+    (_, state), grads = grad_fn(state.w_params, state.h_params, state, batch)
+    state = state.apply_w_gradients(w_grads=grads)
+    return state
+
+
+@jax.jit
 def B_jvp(w_params, h_params, batch, state, v, eps=1e-7):
     """d^2 L1 / dl dw v"""
     w_plus = jax.tree_util.tree_map(lambda x, y: x + eps * y, w_params, v)
