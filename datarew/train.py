@@ -46,7 +46,7 @@ def main():
 
     conv_net = hk.transform_with_state(lambda x, t: hk.nets.ResNet18(10)(x, t))
     wnet = hk.transform(lambda x: hk.nets.MLP([args.wnet_hidden, 1],
-                                            activation=jax.nn.relu, activate_final=False)(x))
+                                            activation=jax.nn.tanh, activate_final=False)(x))
 
     seed = args.seed
     np.random.seed(seed)
