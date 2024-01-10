@@ -30,8 +30,11 @@ def main():
     parser.add_argument('--seed', type=int, required=True, default=0)
     parser.add_argument('--corruption', type=float, required=True, default=0.0)
     parser.add_argument('--T', type=int, required=False, default=20)
+    parser.add_argument('--outer_steps', type=int, required=False, default=1000)
     parser.add_argument('--wnet_hidden', type=int, required=False, default=100)
     parser.add_argument('--method', type=str, required=True, default='proposed_0.999')
+    parser.add_argument('--inner_lr', type=float, required=False, default=1e-1)
+    parser.add_argument('--outer_lr', type=float, required=False, default=1e-2)
     args = parser.parse_args()
 
     metrics_history = {seed: {'train_loss': [],
@@ -47,12 +50,12 @@ def main():
     seed = args.seed
     np.random.seed(seed)
     torch.manual_seed(seed)
-    state = create_dw_train_state(conv_net, wnet, jax.random.PRNGKey(seed),
-                                learning_rate=1e-2, alpha_lr=1e-2, input_shape=[32, 32, 3])
+    state = create_dw_train_state(conv_net, wnet, jax.random.PRNGKey(seed), args.T * args.outer_steps,
+                                learning_rate=args.inner_lr, alpha_lr=args.outer_lr, input_shape=[32, 32, 3])
 
     trainloader, valloader, testloader = get_dataloaders_cifar(args.corruption, batch_size=64)
     method, m_params = parse_method(args.method)
-    for outer_step in tqdm(range(300)):
+    for outer_step in tqdm(range(args.outer_steps)):
         
         x_val, y_val = next(iter(valloader))
         val_batch = {'image': jnp.asarray(x_val), 'label': jnp.asarray(y_val)}
