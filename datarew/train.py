@@ -30,11 +30,13 @@ def main():
     parser.add_argument('--seed', type=int, required=True, default=0)
     parser.add_argument('--corruption', type=float, required=True, default=0.0)
     parser.add_argument('--T', type=int, required=False, default=20)
+    parser.add_argument('--batch_size', type=int, required=False, default=128)
     parser.add_argument('--outer_steps', type=int, required=False, default=1000)
     parser.add_argument('--wnet_hidden', type=int, required=False, default=100)
     parser.add_argument('--method', type=str, required=True, default='proposed_0.999')
     parser.add_argument('--inner_lr', type=float, required=False, default=1e-1)
     parser.add_argument('--outer_lr', type=float, required=False, default=1e-2)
+    parser.add_argument('--val_freq', type=int, required=False, default=20)
     args = parser.parse_args()
 
     metrics_history = {seed: {'train_loss': [],
@@ -53,7 +55,7 @@ def main():
     state = create_dw_train_state(conv_net, wnet, jax.random.PRNGKey(seed), args.T * args.outer_steps,
                                 learning_rate=args.inner_lr, alpha_lr=args.outer_lr, input_shape=[32, 32, 3])
 
-    trainloader, valloader, testloader = get_dataloaders_cifar(args.corruption, batch_size=64)
+    trainloader, valloader, testloader = get_dataloaders_cifar(args.corruption, batch_size=args.batch_size)
     method, m_params = parse_method(args.method)
     for outer_step in tqdm(range(args.outer_steps)):
         
@@ -80,7 +82,7 @@ def main():
         state = state.apply_h_gradients(h_grads=g_so)
 
         # eval
-        if outer_step % 10 == 0 and outer_step > 0:
+        if outer_step % args.val_freq == 0 and outer_step > 0:
             for _, (x, y) in enumerate(testloader):
                 val_batch = {'image': jnp.asarray(x), 'label': jnp.asarray(y)}
                 state = compute_metrics(state=state, batch=val_batch)
