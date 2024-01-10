@@ -12,7 +12,8 @@ def loss_fn_trn(w_params, h_params, state: DataWTrainState, batch, is_training=T
                                           batch['image'], is_training)
     loss_int = optax.softmax_cross_entropy_with_integer_labels(
         logits=logits, labels=batch['label'])
-    loss = state.wnet_fn(h_params, state.rng, loss_int.reshape(-1, 1)).mean()
+    weights = state.wnet_fn(h_params, state.rng, loss_int.reshape(-1, 1)).reshape(-1)
+    loss = loss_int.reshape(-1) * jax.nn.sigmoid(weights)
     return loss.mean(), state.replace(bn_state=bn_state)
 
 
