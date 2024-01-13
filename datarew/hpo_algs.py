@@ -28,6 +28,12 @@ def loss_fn_val(w_params, h_params, state, batch, is_training=True):
 
 
 @jax.jit
+def loss_fn_val_grad_params(w_params, h_params, state, batch):
+    # is_training is always True
+    return jax.grad(loss_fn_val, argnums=0, has_aux=True)(w_params, h_params, state, batch)[0]
+
+
+@jax.jit
 def compute_metrics(*, state, batch):
     params = hk.data_structures.merge(state.w_params, state.h_params)
     logits, _ = state.apply_fn(params, state.bn_state, None, batch['image'], False)
@@ -85,7 +91,7 @@ def drmad_grad(state, batches, val_batch):
     for step, batch in enumerate(batches):
         state = inner_step(state, batch)
     w_T = state.w_params
-    alpha = jax.grad(loss_fn_val, argnums=0, has_aux=True)(state.w_params, state.h_params, state, val_batch)[0]
+    alpha = loss_fn_val_grad_params(state.w_params, state.h_params, state, val_batch)
     for step, batch in enumerate(batches[::-1]):
         t = T - step
         w_tm1 = jax.tree_util.tree_map(lambda x, y: (1 - (t - 1) / T) * x + (t - 1) / T * y, w_0, w_T)
@@ -102,7 +108,7 @@ def proposed_so_grad(state, batches, val_batch, gamma):
     T = len(batches)
     for step, batch in enumerate(batches):
         new_state = inner_step(state, batch)
-        curr_alpha = jax.grad(loss_fn_val, argnums=0, has_aux=True)(new_state.w_params, state.h_params, state, val_batch)[0]
+        curr_alpha = loss_fn_val_grad_params(new_state.w_params, state.h_params, state, val_batch)
         g_so = jax.tree_util.tree_map(lambda x, y: x * gamma ** (T - 1 - step) + y,
                                       B_jvp(state.w_params, state.h_params, batch,
                                             state, curr_alpha),
@@ -116,7 +122,7 @@ def IFT_grad(state, batches, val_batch, N):
     for step, batch in enumerate(batches):
         state = inner_step(state, batch)
         
-    v = jax.grad(loss_fn_val, argnums=0, has_aux=True)(state.w_params, state.h_params, state, val_batch)[0]
+    v = loss_fn_val_grad_params(state.w_params, state.h_params, state, val_batch)
     so_grad = B_jvp(state.w_params, state.h_params, batches[-1], state, v)
     for k in range(1, N + 1):
         v = A_jvp(state.w_params, batches[-1], state, v)
