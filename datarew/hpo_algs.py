@@ -117,6 +117,21 @@ def proposed_so_grad(state, batches, val_batch, gamma):
     return state, g_so
 
 
+def luketina_so_grad(state, batches, val_batch):
+    """T = len(batches)"""
+    g_so = jax.tree_util.tree_map(jnp.zeros_like, state.h_params)
+    T = len(batches)
+    for step, batch in enumerate(batches):
+        new_state = inner_step(state, batch)
+        if step == T - 1:
+            curr_alpha = loss_fn_val_grad_params(new_state.w_params, state.h_params, state, val_batch)
+            g_so = jax.tree_util.tree_map(lambda x, y: x + y,
+                                        B_jvp(state.w_params, state.h_params, batch,
+                                                state, curr_alpha), g_so)
+        state = new_state
+    return state, g_so
+
+
 def IFT_grad(state, batches, val_batch, N):
     """N - the number of terms from Neuman series"""
     for step, batch in enumerate(batches):

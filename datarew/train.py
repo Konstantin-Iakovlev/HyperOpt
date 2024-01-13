@@ -21,6 +21,8 @@ def parse_method(method: str):
         return 'IFT', int(method.split('_')[-1])
     elif method == 'baseline':
         return 'baseline', None
+    elif method == 'luketina':
+        return 'luketina', None
     else:
         return ValueError('Unknorn method: ' + method)
 
@@ -75,6 +77,8 @@ def main():
             g_so = jax.tree_util.tree_map(jnp.zeros_like, state.h_params)
             for batch in batches:
                 state = inner_step_baseline(state, batch)
+        elif method == 'luketina':
+            state, g_so = luketina_so_grad(state, batches, val_batch)
         else:
             raise ValueError('Unknown ' + method)
         
