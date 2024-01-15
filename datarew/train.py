@@ -36,6 +36,7 @@ def main():
     parser.add_argument('--outer_steps', type=int, required=False, default=1000)
     parser.add_argument('--wnet_hidden', type=int, required=False, default=100)
     parser.add_argument('--method', type=str, required=True, default='proposed_0.999')
+    parser.add_argument('--backbone', type=str, required=False, default='MobileNetV1')
     parser.add_argument('--inner_lr', type=float, required=False, default=1e-1)
     parser.add_argument('--outer_lr', type=float, required=False, default=1e-2)
     parser.add_argument('--val_freq', type=int, required=False, default=20)
@@ -46,7 +47,7 @@ def main():
                     'test_loss': [],
                     'test_accuracy': []} for seed in [args.seed]}
 
-    conv_net = hk.transform_with_state(lambda x, t: hk.nets.ResNet18(10)(x, t))
+    conv_net = hk.transform_with_state(lambda x, t: eval('hk.nets.' + args.backbone)(num_classes=10)(x, t))
     wnet = hk.transform(lambda x: hk.nets.MLP([args.wnet_hidden, 1],
                                             activation=jax.nn.tanh, activate_final=False)(x))
 
