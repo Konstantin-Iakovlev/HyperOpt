@@ -23,14 +23,14 @@ class DataWTrainState(struct.PyTreeNode):
     h_params: core.FrozenDict[str, Any] = struct.field(pytree_node=True)
     bn_state: core.FrozenDict[str, Any] = struct.field(pytree_node=True)
     inner_opt: optax.GradientTransformation = struct.field(pytree_node=False)
+    scheduler: Callable = struct.field(pytree_node=False)
     inner_opt_state: optax.OptState = struct.field(pytree_node=True)
     outer_opt: optax.GradientTransformation = struct.field(pytree_node=False)
     outer_opt_state: optax.OptState = struct.field(pytree_node=True)
-    lr: float  # inner lr
 
     @classmethod
     def create(cls, *, apply_fn, wnet_fn, w_params, h_params,
-               bn_state, inner_opt, outer_opt, **kwargs):
+               bn_state, inner_opt, scheduler, outer_opt, **kwargs):
         inner_opt_state = inner_opt.init(w_params)
         outer_opt_state = outer_opt.init(h_params)
         return cls(
@@ -41,6 +41,7 @@ class DataWTrainState(struct.PyTreeNode):
             h_params=h_params,
             bn_state=bn_state,
             inner_opt=inner_opt,
+            scheduler=scheduler,
             outer_opt=outer_opt,
             inner_opt_state=inner_opt_state,
             outer_opt_state=outer_opt_state,
@@ -68,6 +69,10 @@ class DataWTrainState(struct.PyTreeNode):
             outer_opt_state=new_out_state,
             **kwargs
         )
+    
+    @property
+    def lr(self):
+        return self.scheduler(self.step)
         
 
 def create_dw_train_state(module, wnet, rng, inner_steps, learning_rate=0.025, momentum=0.9, w_decay=3e-4,
@@ -83,5 +88,6 @@ def create_dw_train_state(module, wnet, rng, inner_steps, learning_rate=0.025, m
     return DataWTrainState.create(
       apply_fn=module.apply, wnet_fn=wnet.apply,
         w_params=w_params, h_params=h_params,
-        bn_state=bn_state, inner_opt=tx_inner, outer_opt=tx_outer,
-      metrics=Metrics.empty(), lr=learning_rate, rng=rng)
+        bn_state=bn_state, inner_opt=tx_inner, scheduler=sch,
+        outer_opt=tx_outer,
+      metrics=Metrics.empty(), rng=rng)
