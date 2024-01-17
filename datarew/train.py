@@ -23,6 +23,8 @@ def parse_method(method: str):
         return 'baseline', None
     elif method == 'luketina':
         return 'luketina', None
+    elif method == 'FISH':
+        return 'FISH', None
     else:
         return ValueError('Unknorn method: ' + method)
 
@@ -80,6 +82,8 @@ def main():
                 state = inner_step_baseline(state, batch)
         elif method == 'luketina':
             state, g_so = luketina_so_grad(state, batches, val_batch)
+        elif method == 'FISH':
+            state, g_so = fish_so_grad(state, batches, val_batch)
         else:
             raise ValueError('Unknown ' + method)
         

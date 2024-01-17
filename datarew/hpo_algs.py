@@ -34,6 +34,11 @@ def loss_fn_val_grad_params(w_params, h_params, state, batch):
 
 
 @jax.jit
+def loss_fn_trn_grad_params(w_params, h_params, state, batch):
+    return jax.grad(loss_fn_trn, argnums=0, has_aux=True)(w_params, h_params, state, batch)[0]
+
+
+@jax.jit
 def compute_metrics(*, state, batch):
     params = hk.data_structures.merge(state.w_params, state.h_params)
     logits, _ = state.apply_fn(params, state.bn_state, None, batch['image'], False)
@@ -113,6 +118,25 @@ def proposed_so_grad(state, batches, val_batch, gamma):
                                       B_jvp(state.w_params, state.h_params, batch,
                                             state, curr_alpha),
                                      g_so)
+        state = new_state
+    return state, g_so
+
+
+def fish_so_grad(state, batches, val_batch):
+    g_so = jax.tree_util.tree_map(jnp.zeros_like, state.h_params)
+    T = len(batches)
+    for step, batch in enumerate(batches):
+        new_state = inner_step(state, batch)
+        curr_alpha = loss_fn_val_grad_params(new_state.w_params, state.h_params, state, val_batch)
+        v = loss_fn_trn_grad_params(new_state.w_params, state.h_params, state, batch)
+        B_alpha_jvp = B_jvp(state.w_params, state.h_params, batch, state, curr_alpha)
+        B_v_jvp = B_jvp(state.w_params, state.h_params, batch, state, v)
+
+        v_norm_sq = jax.tree_util.tree_reduce(lambda s, x: s + (x ** 2).sum(), v, initializer=0.0)
+        c_t = ((1 + state.lr * v_norm_sq) ** (T - 1 - step) - 1) / v_norm_sq  # TODO: expm1 is more stable operation
+        alpha_dot_v = sum(jax.tree_util.tree_leaves(jax.tree_util.tree_map(lambda x, y: (x * y).sum(), curr_alpha, v)))
+        g_so_upd = jax.tree_util.tree_map(lambda x, y: x - c_t * alpha_dot_v * y, B_alpha_jvp, B_v_jvp)
+        g_so = jax.tree_util.tree_map(lambda x, y: x + y, g_so, g_so_upd)
         state = new_state
     return state, g_so
 
