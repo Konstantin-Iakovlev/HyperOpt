@@ -99,6 +99,7 @@ def main():
                 state = compute_metrics(state=state, batch=val_batch)
             for metric,value in state.metrics.compute().items():
                 metrics_history[seed][f'test_{metric}'].append(value.item())
+            state = state.replace(metrics=state.metrics.empty())
     acc_arr = np.stack([metrics_history[s]['test_accuracy'] for s in [seed]], axis=0)
     print('Finished with', acc_arr.max(-1))
     with open(f'{args.method}_{seed}.json', 'w') as f:
