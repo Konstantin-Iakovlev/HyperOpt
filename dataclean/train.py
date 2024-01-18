@@ -61,16 +61,6 @@ def main():
     out_state = outer_opt.init(w_logits)
     method, m_params = parse_method(args.method)
     for outer_step in tqdm(range(args.outer_steps)):
-        # eval. TODO: remove
-        if outer_step % args.val_freq == 0:
-            for x, y in testloader:
-                test_batch = {'image': jnp.asarray(x), 'label': jnp.asarray(y)}
-                state = compute_metrics(state=state, batch=test_batch)
-        
-            for metric,value in state.metrics.compute().items():
-                metrics_history[seed][f'test_{metric}'].append(value.item())
-            state = state.replace(metrics=state.metrics.empty())
-        
         x, y = next(iter(valloader))
         val_batch = {'image': jnp.asarray(x), 'label': jnp.asarray(y),
                      'lambda': jnp.zeros((y.shape[0],))}
@@ -94,8 +84,7 @@ def main():
             for batch in batches:
                 state = inner_step_baseline(state, batch)
         elif method == 'luketina':
-            # TODO
-            pass
+            state, g_so_arr = luketina_so_grad(state, batches, val_batch)
         elif method == 'FISH':
             state, g_so_arr = fish_so_grad(state, batches, val_batch)
         else:

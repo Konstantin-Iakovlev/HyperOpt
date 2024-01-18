@@ -79,6 +79,19 @@ def proposed_so_grad(state, batches, val_batch, gamma):
     return state, g_so_arr
 
 
+def luketina_so_grad(state, batches, val_batch):
+    """T = len(batches)"""
+    g_so_arr = []
+    T = len(batches)
+    for step, batch in enumerate(batches):
+        new_state = inner_step(state, batch)
+        curr_alpha = jax.grad(loss_fn, argnums=0, has_aux=True)(new_state.params, state, val_batch)[0]
+        g_so_arr.append(B_jvp(state.params, batch, state,
+                        curr_alpha))
+        state = new_state
+    return state, g_so_arr
+
+
 def fish_so_grad(state: DataCleanTrainState, batches, val_batch):
     """T = len(batches)"""
     g_so_arr = []
