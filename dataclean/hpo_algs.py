@@ -3,7 +3,7 @@ import optax
 from train_state import DataCleanTrainState
 
 
-# @jax.jit
+@jax.jit
 def loss_fn(params, state: DataCleanTrainState, batch, is_training=True):
     logits, bn_state = state.apply_fn(params, state.bn_state, state.rng,
                                       batch['image'], is_training)
@@ -12,7 +12,7 @@ def loss_fn(params, state: DataCleanTrainState, batch, is_training=True):
     return loss, state.replace(bn_state=bn_state)
 
 
-# @jax.jit
+@jax.jit
 def compute_metrics(*, state, batch):
     logits, _ = state.apply_fn(state.params, state.bn_state, None, batch['image'], False)
     loss = optax.softmax_cross_entropy_with_integer_labels(
@@ -24,7 +24,7 @@ def compute_metrics(*, state, batch):
     return state
 
 
-# @jax.jit
+@jax.jit
 def inner_step(state: DataCleanTrainState, batch):
     grad_fn = jax.grad(loss_fn, argnums=0, has_aux=True)
     grads = grad_fn(state.params, state, batch)[0]
@@ -32,7 +32,7 @@ def inner_step(state: DataCleanTrainState, batch):
     return state
 
 
-# @jax.jit
+@jax.jit
 def inner_step_baseline(state: DataCleanTrainState, batch):
     grad_fn = jax.value_and_grad(loss_fn, argnums=0, has_aux=True)
     (_, state), grads = grad_fn(state.params, state, batch)
@@ -40,7 +40,7 @@ def inner_step_baseline(state: DataCleanTrainState, batch):
     return state
 
 
-# @jax.jit
+@jax.jit
 def B_jvp(params, batch, state, v):
     w_plus = jax.tree_util.tree_map(lambda x, y: x + 1e-7 * y, params, v)
     w_minus = jax.tree_util.tree_map(lambda x, y: x - 1e-7 * y, params, v)
@@ -54,7 +54,7 @@ def B_jvp(params, batch, state, v):
     return -state.lr * (g_plus - g_minus) / (2 * 1e-7)
 
 
-# @jax.jit
+@jax.jit
 def A_jvp(params, batch, state, v):
     w_plus = jax.tree_util.tree_map(lambda x, y: x + 1e-7 * y, params, v)
     w_minus = jax.tree_util.tree_map(lambda x, y: x - 1e-7 * y, params, v)
