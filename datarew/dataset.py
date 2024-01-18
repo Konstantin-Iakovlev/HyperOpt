@@ -39,9 +39,14 @@ def get_dataloaders_fmnist(corruption: float, batch_size: int):
     return trainloader, valloader, testloader
 
 
-def get_dataloaders_cifar(corruption: float, batch_size: int):
-    CIFAR_MEAN = [0.49139968, 0.48215827, 0.44653124]
-    CIFAR_STD = [0.24703233, 0.24348505, 0.26158768]
+def get_dataloaders_cifar(corruption: float, batch_size: int, ds_name='cifar10'):
+    CIFAR_10_MEAN = [0.49139968, 0.48215827, 0.44653124]
+    CIFAR_10_STD = [0.24703233, 0.24348505, 0.26158768]
+    CIFAR_100_MEAN = (0.5070751592371323, 0.48654887331495095, 0.4409178433670343)
+    CIFAR_100_STD = (0.2673342858792401, 0.2564384629170883, 0.27615047132568404)
+    CIFAR_MEAN, CIFAR_STD = CIFAR_10_MEAN, CIFAR_10_STD
+    if ds_name.endswith('100'):
+        CIFAR_MEAN, CIFAR_STD = CIFAR_100_MEAN, CIFAR_100_STD
 
     class ToNumpy:
         def __call__(self, pic):
@@ -56,7 +61,8 @@ def get_dataloaders_cifar(corruption: float, batch_size: int):
     ])
 
     np.random.seed(0)
-    train_data = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=train_transform,
+    ds_cls = torchvision.datasets.CIFAR10 if ds_name.endswith('10') else torchvision.datasets.CIFAR100
+    train_data = ds_cls(root='./data', train=True, download=True, transform=train_transform,
                                               target_transform=lambda y: np.random.randint(10) \
                                                 if np.random.rand() < corruption else y)
 
@@ -68,7 +74,7 @@ def get_dataloaders_cifar(corruption: float, batch_size: int):
 
     valloader = jdl.DataLoader(torch.utils.data.Subset(train_data, range(split, len(train_data))), 'pytorch',
                                 batch_size=batch_size, shuffle=True, drop_last=True)
-    test_data = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=train_transform)
+    test_data = ds_cls(root='./data', train=False, download=True, transform=train_transform)
     testloader = jdl.DataLoader(test_data, 'pytorch',
                                 batch_size=batch_size, shuffle=False, drop_last=False)
 

@@ -38,7 +38,8 @@ def main():
     parser.add_argument('--outer_steps', type=int, required=False, default=1000)
     parser.add_argument('--wnet_hidden', type=int, required=False, default=100)
     parser.add_argument('--method', type=str, required=True, default='proposed_0.999')
-    parser.add_argument('--backbone', type=str, required=False, default='MobileNetV1')
+    parser.add_argument('--backbone', type=str, required=False, default='ResNet18')
+    parser.add_argument('--dataset', type=str, required=False, default='cifar100')
     parser.add_argument('--inner_lr', type=float, required=False, default=1e-1)
     parser.add_argument('--outer_lr', type=float, required=False, default=1e-2)
     parser.add_argument('--val_freq', type=int, required=False, default=20)
@@ -49,7 +50,8 @@ def main():
                     'test_loss': [],
                     'test_accuracy': []} for seed in [args.seed]}
 
-    conv_net = hk.transform_with_state(lambda x, t: eval('hk.nets.' + args.backbone)(num_classes=10)(x, t))
+    n_cls = int(args.dataset.replace('cifar', ''))
+    conv_net = hk.transform_with_state(lambda x, t: eval('hk.nets.' + args.backbone)(num_classes=n_cls)(x, t))
     wnet = hk.transform(lambda x: hk.nets.MLP([args.wnet_hidden, 1],
                                             activation=jax.nn.tanh, activate_final=False)(x))
 
@@ -59,7 +61,8 @@ def main():
     state = create_dw_train_state(conv_net, wnet, jax.random.PRNGKey(seed), args.T * args.outer_steps,
                                 learning_rate=args.inner_lr, alpha_lr=args.outer_lr, input_shape=[32, 32, 3])
 
-    trainloader, valloader, testloader = get_dataloaders_cifar(args.corruption, batch_size=args.batch_size)
+    trainloader, valloader, testloader = get_dataloaders_cifar(args.corruption, batch_size=args.batch_size,
+                                                               ds_name=args.dataset)
     method, m_params = parse_method(args.method)
     for outer_step in tqdm(range(args.outer_steps)):
         
