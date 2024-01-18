@@ -57,7 +57,7 @@ def main():
     state = create_train_state(conv_net, jax.random.PRNGKey(seed), args.T * args.outer_steps, args.inner_lr)
     trainloader, valloader, testloader = get_dataloaders_cifar(args.corruption, args.batch_size, args.dataset)
     w_logits = jnp.zeros([(len(trainloader) + 1) * args.batch_size,], dtype=jnp.float32)
-    outer_opt = optax.adam(1.0)
+    outer_opt = optax.adam(args.outer_lr)
     out_state = outer_opt.init(w_logits)
     method, m_params = parse_method(args.method)
     for outer_step in tqdm(range(args.outer_steps)):
