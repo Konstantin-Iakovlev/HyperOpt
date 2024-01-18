@@ -82,7 +82,7 @@ def main():
         elif method == 'baseline':
             g_so_arr = [jnp.zeros([args.batch_size,], dtype=jnp.float32)] * args.T
             for batch in batches:
-                state = inner_step_baseline(state, batch)
+                state = inner_step(state, batch)
         elif method == 'luketina':
             state, g_so_arr = luketina_so_grad(state, batches, val_batch)
         elif method == 'FISH':

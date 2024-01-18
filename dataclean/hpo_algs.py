@@ -26,14 +26,6 @@ def compute_metrics(*, state, batch):
 
 @jax.jit
 def inner_step(state: DataCleanTrainState, batch):
-    grad_fn = jax.grad(loss_fn, argnums=0, has_aux=True)
-    grads = grad_fn(state.params, state, batch)[0]
-    state = state.apply_gradients(grads=grads)
-    return state
-
-
-@jax.jit
-def inner_step_baseline(state: DataCleanTrainState, batch):
     grad_fn = jax.value_and_grad(loss_fn, argnums=0, has_aux=True)
     (_, state), grads = grad_fn(state.params, state, batch)
     state = state.apply_gradients(grads=grads)
