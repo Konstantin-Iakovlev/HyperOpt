@@ -19,7 +19,7 @@ class DataCleaningDS(Dataset):
         return len(self.ds)
 
 
-def get_dataloaders_cifar(corruption: float, batch_size: int, ds_name='cifar10'):
+def get_dataloaders_cifar(corruption: float, batch_size: int, num_samples, ds_name='cifar10'):
     CIFAR_10_MEAN = [0.49139968, 0.48215827, 0.44653124]
     CIFAR_10_STD = [0.24703233, 0.24348505, 0.26158768]
     CIFAR_100_MEAN = (0.5070751592371323, 0.48654887331495095, 0.4409178433670343)
@@ -45,7 +45,8 @@ def get_dataloaders_cifar(corruption: float, batch_size: int, ds_name='cifar10')
     train_data = ds_cls(root='./data', train=True, download=True, transform=train_transform,
                                               target_transform=lambda y: np.random.randint(10) \
                                                 if np.random.rand() < corruption else y)
-    train_data = DataCleaningDS(train_data)
+    ids = np.random.choice(len(train_data), size=(min(num_samples, len(train_data)),), replace=False)
+    train_data = DataCleaningDS([train_data[i] for i in ids])
     trainloader = jdl.DataLoader(train_data, 'pytorch',
                                 batch_size=batch_size, shuffle=True, drop_last=True)
 
