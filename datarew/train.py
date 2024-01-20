@@ -35,6 +35,7 @@ def main():
     parser.add_argument('--corruption', type=float, required=True, default=0.0)
     parser.add_argument('--T', type=int, required=False, default=20)
     parser.add_argument('--batch_size', type=int, required=False, default=128)
+    parser.add_argument('--data_size', type=int, required=False, default=1_000_000)
     parser.add_argument('--outer_steps', type=int, required=False, default=1000)
     parser.add_argument('--wnet_hidden', type=int, required=False, default=100)
     parser.add_argument('--method', type=str, required=True, default='proposed_0.999')
@@ -62,6 +63,7 @@ def main():
                                 learning_rate=args.inner_lr, alpha_lr=args.outer_lr, input_shape=[32, 32, 3])
 
     trainloader, valloader, testloader = get_dataloaders_cifar(args.corruption, batch_size=args.batch_size,
+                                                               num_samples=args.data_size,
                                                                ds_name=args.dataset)
     method, m_params = parse_method(args.method)
     for outer_step in tqdm(range(args.outer_steps)):
@@ -73,6 +75,7 @@ def main():
             if i >= args.T:
                 break
             batches.append({'image': x, 'label': y})
+        assert len(batches) == args.T, f'{len(batches)} < {args.T}. Consider bigger data size'
         if method == 'proposed':
             state, g_so = proposed_so_grad(state, batches, val_batch, m_params)
         elif method == 'DrMAD':

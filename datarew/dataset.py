@@ -49,7 +49,7 @@ def get_dataloaders_fmnist(corruption: float, batch_size: int):
     return trainloader, valloader, testloader
 
 
-def get_dataloaders_cifar(corruption: float, batch_size: int, ds_name='cifar10'):
+def get_dataloaders_cifar(corruption: float, batch_size: int, num_samples, ds_name='cifar10'):
     CIFAR_10_MEAN = [0.49139968, 0.48215827, 0.44653124]
     CIFAR_10_STD = [0.24703233, 0.24348505, 0.26158768]
     CIFAR_100_MEAN = (0.5070751592371323, 0.48654887331495095, 0.4409178433670343)
@@ -76,8 +76,10 @@ def get_dataloaders_cifar(corruption: float, batch_size: int, ds_name='cifar10')
                                               target_transform=lambda y: np.random.randint(10) \
                                                 if np.random.rand() < corruption else y)
 
+    ids = np.random.choice(len(train_data), size=(min(num_samples, len(train_data)),), replace=False)
+    train_data = [train_data[i] for i in ids]
     num_train = len(train_data)
-    split = int(np.floor(0.5 * num_train))
+    split = int(np.floor(num_train - 1000))
 
     trainloader = DataLoader(torch.utils.data.Subset(train_data, range(split)), batch_size=batch_size,
                              shuffle=True, drop_last=True, collate_fn=numpy_collate)
