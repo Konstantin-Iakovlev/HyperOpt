@@ -67,12 +67,12 @@ def main():
     for outer_step in tqdm(range(args.outer_steps)):
         
         x_val, y_val = next(iter(valloader))
-        val_batch = {'image': jnp.asarray(x_val), 'label': jnp.asarray(y_val)}
+        val_batch = {'image': x_val, 'label': y_val}
         batches = []
         for i, (x, y) in enumerate(trainloader):
             if i >= args.T:
                 break
-            batches.append({'image': jnp.asarray(x), 'label': jnp.asarray(y)})
+            batches.append({'image': x, 'label': y})
         if method == 'proposed':
             state, g_so = proposed_so_grad(state, batches, val_batch, m_params)
         elif method == 'DrMAD':
@@ -95,7 +95,7 @@ def main():
         # eval
         if outer_step % args.val_freq == 0 and outer_step > 0:
             for _, (x, y) in enumerate(testloader):
-                val_batch = {'image': jnp.asarray(x), 'label': jnp.asarray(y)}
+                val_batch = {'image': x, 'label': y}
                 state = compute_metrics(state=state, batch=val_batch)
             for metric,value in state.metrics.compute().items():
                 metrics_history[seed][f'test_{metric}'].append(value.item())

@@ -1,7 +1,7 @@
 import jax
 import jax.numpy as jnp
-import jax_dataloader as jdl
 import torch
+from torch.utils.data import DataLoader
 import torchvision
 from torchvision import transforms
 import numpy as np
@@ -10,6 +10,16 @@ import numpy as np
 def collate_fn(batch):
     return jnp.asarray(torch.stack([b[0] for b in batch], dim=0).permute(0, 2, 3, 1).cpu().numpy()), \
     jnp.array([b[1] for b in batch], dtype=jnp.int32)
+
+
+def numpy_collate(batch):
+    if isinstance(batch[0], np.ndarray):
+        return np.stack(batch)
+    elif isinstance(batch[0], (tuple, list)):
+        transposed = zip(*batch)
+        return [numpy_collate(samples) for samples in transposed]
+    else:
+        return np.array(batch)
 
 
 def get_dataloaders_fmnist(corruption: float, batch_size: int):
@@ -69,14 +79,14 @@ def get_dataloaders_cifar(corruption: float, batch_size: int, ds_name='cifar10')
     num_train = len(train_data)
     split = int(np.floor(0.5 * num_train))
 
-    trainloader = jdl.DataLoader(torch.utils.data.Subset(train_data, range(split)), 'pytorch',
-                                batch_size=batch_size, shuffle=True, drop_last=True)
+    trainloader = DataLoader(torch.utils.data.Subset(train_data, range(split)), batch_size=batch_size,
+                             shuffle=True, drop_last=True, collate_fn=numpy_collate)
 
-    valloader = jdl.DataLoader(torch.utils.data.Subset(train_data, range(split, len(train_data))), 'pytorch',
-                                batch_size=batch_size, shuffle=True, drop_last=True)
+    valloader = DataLoader(torch.utils.data.Subset(train_data, range(split, len(train_data))),
+                           batch_size=batch_size, shuffle=True, drop_last=True, collate_fn=numpy_collate)
     test_data = ds_cls(root='./data', train=False, download=True, transform=train_transform)
-    testloader = jdl.DataLoader(test_data, 'pytorch',
-                                batch_size=batch_size, shuffle=False, drop_last=False)
+    testloader = DataLoader(test_data, batch_size=batch_size, shuffle=False, drop_last=False,
+                            collate_fn=numpy_collate)
 
     return trainloader, valloader, testloader
 
