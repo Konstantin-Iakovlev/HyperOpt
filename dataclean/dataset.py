@@ -1,8 +1,6 @@
 import jax
 import jax.numpy as jnp
-import jax_dataloader as jdl
-import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 import torchvision
 from torchvision import transforms
 import numpy as np
@@ -17,6 +15,15 @@ class DataCleaningDS(Dataset):
     
     def __len__(self):
         return len(self.ds)
+
+def numpy_collate(batch):
+    if isinstance(batch[0], np.ndarray):
+        return np.stack(batch)
+    elif isinstance(batch[0], (tuple, list)):
+        transposed = zip(*batch)
+        return [numpy_collate(samples) for samples in transposed]
+    else:
+        return np.array(batch)
 
 
 def get_dataloaders_cifar(corruption: float, batch_size: int, num_samples, ds_name='cifar10'):
@@ -47,13 +54,10 @@ def get_dataloaders_cifar(corruption: float, batch_size: int, num_samples, ds_na
                                                 if np.random.rand() < corruption else y)
     ids = np.random.choice(len(train_data), size=(min(num_samples, len(train_data)),), replace=False)
     train_data = DataCleaningDS([train_data[i] for i in ids])
-    trainloader = jdl.DataLoader(train_data, 'pytorch',
-                                batch_size=batch_size, shuffle=True, drop_last=True)
+    trainloader = DataLoader(train_data, batch_size=batch_size, shuffle=True, drop_last=True, collate_fn=numpy_collate)
 
     test_data = ds_cls(root='./data', train=False, download=True, transform=train_transform)
-    testloader = jdl.DataLoader(test_data, 'pytorch',
-                                batch_size=batch_size, shuffle=False, drop_last=False)
-    valloader = jdl.DataLoader(test_data, 'pytorch',
-                                batch_size=batch_size, shuffle=True, drop_last=True)
+    testloader = DataLoader(test_data, batch_size=batch_size, shuffle=False, drop_last=False, collate_fn=numpy_collate)
+    valloader = DataLoader(test_data, batch_size=batch_size, shuffle=True, drop_last=True, collate_fn=numpy_collate)
     return trainloader, valloader, testloader
 
