@@ -63,13 +63,13 @@ def main():
     method, m_params = parse_method(args.method)
     for outer_step in tqdm(range(args.outer_steps)):
         x, y = next(iter(valloader))
-        val_batch = {'image': jnp.asarray(x), 'label': jnp.asarray(y),
+        val_batch = {'image': x, 'label': y,
                      'lambda': jnp.zeros((y.shape[0],))}
         batches = []
         for i, (x, y, ids) in enumerate(trainloader):
-            ids = jnp.asarray(ids)
-            x = jnp.asarray(x)
-            y = jnp.asarray(y)
+            ids = ids
+            x = x
+            y = y
             batches.append({'image': x, 'label': y,
                             'lambda': w_logits[ids], 'ids': ids})
             if i == args.T - 1:
@@ -101,7 +101,7 @@ def main():
         # eval
         if outer_step % args.val_freq == 0 and outer_step > 0:
             for x, y in testloader:
-                test_batch = {'image': jnp.asarray(x), 'label': jnp.asarray(y)}
+                test_batch = {'image': x, 'label': y}
                 state = compute_metrics(state=state, batch=test_batch)
         
             for metric,value in state.metrics.compute().items():
