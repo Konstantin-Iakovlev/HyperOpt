@@ -8,7 +8,7 @@ import haiku as hk
 @jax.jit
 def loss_fn_trn(w_params, h_params, state: DataWTrainState, batch, is_training=True):
     noize = jax.random.normal(state.rng, shape=(*batch['image'].shape[:-1], 1))
-    inp_image = jnp.concatenate(batch['image'], noize, axis=-1)
+    inp_image = jnp.concatenate([batch['image'], noize], axis=-1)
     aug_img = state.wnet_fn(h_params, state.rng, inp_image)[..., :-1]
     logits, bn_state = state.apply_fn(w_params, state.bn_state, state.rng,
                                           aug_img,
