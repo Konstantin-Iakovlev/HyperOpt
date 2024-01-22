@@ -4,6 +4,7 @@ import jax.numpy as jnp
 import haiku as hk
 from train_state import create_dw_train_state
 from model import CNN
+from unet import Unet
 from dataset import get_dataloaders_cifar
 import numpy as np
 from hpo_algs import *
@@ -53,13 +54,14 @@ def main():
 
     n_cls = int(args.dataset.replace('cifar', ''))
     conv_net = hk.transform_with_state(lambda x, t: eval('hk.nets.' + args.backbone)(num_classes=n_cls)(x, t))
-    wnet = hk.transform(lambda x: hk.nets.MLP([args.wnet_hidden, 1],
-                                            activation=jax.nn.tanh, activate_final=False)(x))
+    # wnet = hk.transform(lambda x: hk.nets.MLP([args.wnet_hidden, 1],
+                                            # activation=jax.nn.tanh, activate_final=False)(x))
+    unet = hk.transform(lambda x: Unet(4, 16)(x))
 
     seed = args.seed
     np.random.seed(seed)
     torch.manual_seed(seed)
-    state = create_dw_train_state(conv_net, wnet, jax.random.PRNGKey(seed), args.T * args.outer_steps,
+    state = create_dw_train_state(conv_net, unet, jax.random.PRNGKey(seed), args.T * args.outer_steps,
                                 learning_rate=args.inner_lr, alpha_lr=args.outer_lr, input_shape=[32, 32, 3])
 
     trainloader, valloader, testloader = get_dataloaders_cifar(args.corruption, batch_size=args.batch_size,

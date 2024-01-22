@@ -7,20 +7,20 @@ import haiku as hk
 
 @jax.jit
 def loss_fn_trn(w_params, h_params, state: DataWTrainState, batch, is_training=True):
-    params = hk.data_structures.merge(w_params, h_params)
-    logits, bn_state = state.apply_fn(params, state.bn_state, state.rng,
-                                          batch['image'], is_training)
-    loss_int = optax.softmax_cross_entropy_with_integer_labels(
+    noize = jax.random.normal(state.rng, shape=(*batch['image'].shape[:-1], 1))
+    inp_image = jnp.concatenate(batch['image'], noize, axis=-1)
+    aug_img = state.wnet_fn(h_params, state.rng, inp_image)[..., :-1]
+    logits, bn_state = state.apply_fn(w_params, state.bn_state, state.rng,
+                                          aug_img,
+                                          is_training)
+    loss = optax.softmax_cross_entropy_with_integer_labels(
         logits=logits, labels=batch['label'])
-    weights = state.wnet_fn(h_params, state.rng, loss_int.reshape(-1, 1)).reshape(-1)
-    loss = loss_int.reshape(-1) * jax.nn.sigmoid(weights)
     return loss.mean(), state.replace(bn_state=bn_state)
 
 
 @jax.jit
 def loss_fn_val(w_params, h_params, state, batch, is_training=True):
-    params = hk.data_structures.merge(w_params, h_params)
-    logits, bn_state = state.apply_fn(params, state.bn_state, state.rng,
+    logits, bn_state = state.apply_fn(w_params, state.bn_state, state.rng,
                                           batch['image'], is_training)
     loss = optax.softmax_cross_entropy_with_integer_labels(
         logits=logits, labels=batch['label']).mean()
