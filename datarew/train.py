@@ -56,7 +56,7 @@ def main():
     conv_net = hk.transform_with_state(lambda x, t: eval('hk.nets.' + args.backbone)(num_classes=n_cls)(x, t))
     # wnet = hk.transform(lambda x: hk.nets.MLP([args.wnet_hidden, 1],
                                             # activation=jax.nn.tanh, activate_final=False)(x))
-    unet = hk.transform(lambda x: Unet(4, 16)(x))
+    unet = hk.transform(lambda x, r: Unet(3, 3)(x, r))
 
     seed = args.seed
     np.random.seed(seed)
