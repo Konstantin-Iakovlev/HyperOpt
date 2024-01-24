@@ -79,7 +79,7 @@ def get_dataloaders_cifar(corruption: float, batch_size: int, num_samples, ds_na
     ids = np.random.choice(len(train_data), size=(min(num_samples, len(train_data)),), replace=False)
     train_data = [train_data[i] for i in ids]
     num_train = len(train_data)
-    split = int(np.floor(num_train - 1000))
+    split = int(np.floor(num_train * 0.8))
 
     trainloader = DataLoader(torch.utils.data.Subset(train_data, range(split)), batch_size=batch_size,
                              shuffle=True, drop_last=True, collate_fn=numpy_collate)
