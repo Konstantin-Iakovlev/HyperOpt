@@ -55,15 +55,19 @@ def main():
                    'svhn': 10,
                    'fmnist': 10,
                    }
+    name_to_shape = {'cifar10': [32, 32, 3],
+                    'cifar100': [32, 32, 3],
+                    'svhn': [32, 32, 3],
+                    'fmnist': [28, 28, 1]}
     n_cls = name_to_cls[args.dataset]
     conv_net = hk.transform_with_state(lambda x, t: eval('hk.nets.' + args.backbone)(num_classes=n_cls)(x, t))
-    unet = hk.transform(lambda x, r: Unet(3, 3)(x, r))
+    unet = hk.transform(lambda x, r: Unet(name_to_shape[args.dataset][-1], 3)(x, r))
 
     seed = args.seed
     np.random.seed(seed)
     torch.manual_seed(seed)
     state = create_dw_train_state(conv_net, unet, jax.random.PRNGKey(seed), args.T * args.outer_steps,
-                                learning_rate=args.inner_lr, alpha_lr=args.outer_lr, input_shape=[32, 32, 3])
+                                learning_rate=args.inner_lr, alpha_lr=args.outer_lr, input_shape=name_to_shape[args.dataset])
 
     trainloader, valloader, testloader = get_dataloaders(batch_size=args.batch_size,
                                                         num_samples=args.data_size,
