@@ -12,6 +12,7 @@ from argparse import ArgumentParser
 from tqdm.auto import tqdm
 import json
 from functools import partial
+import matplotlib.pyplot as plt
 
 
 def parse_method(method: str):
@@ -59,14 +60,16 @@ def main():
                    'cifar100': 100,
                    'svhn': 10,
                    'fmnist': 10,
+                   'mnist': 10,
                    }
     name_to_shape = {'cifar10': [32, 32, 3],
                     'cifar100': [32, 32, 3],
                     'svhn': [32, 32, 3],
-                    'fmnist': [28, 28, 1]}
+                    'fmnist': [28, 28, 1],
+                    'mnist': [28, 28, 1]
+                    }
     n_cls = name_to_cls[args.dataset]
     conv_net = hk.transform_with_state(lambda x, t: eval(args.backbone)(num_classes=n_cls)(x, t))
-    # conv_net = hk.transform(lambda x, t: eval(args.backbone)(num_classes=n_cls)(x, t))
 
     seed = args.seed
     np.random.seed(seed)
@@ -83,7 +86,7 @@ def main():
 
     method, m_params = parse_method(args.method)
     for outer_step in tqdm(range(args.outer_steps)):
-        state = create_train_state(conv_net, jax.random.PRNGKey(seed), args.T * args.outer_steps, args.inner_lr,
+        state = create_train_state(conv_net, jax.random.PRNGKey(seed + outer_step), args.T * args.outer_steps, args.inner_lr,
                                    inp_shape=name_to_shape[args.dataset])
         x, y = next(iter(valloader))
         val_batch = {'image': x, 'label': y,
@@ -114,6 +117,9 @@ def main():
             state = state.replace(metrics=state.metrics.empty())
 
     acc_arr = np.stack([metrics_history[s]['test_accuracy'] for s in [seed]], axis=0)
+    print(acc_arr)
+    plt.imshow(np.asarray(distil_imgs[0, :, :, 0]))
+    plt.savefig('zero.pdf')
     print('Finished with', acc_arr.max(-1))
     with open(f'{args.method}_{seed}.json', 'w') as f:
         f.write(json.dumps({seed: float(acc_arr.max(-1).item())}))
