@@ -49,6 +49,7 @@ def main():
                               'test_accuracy': []} for seed in [args.seed]}
     n_cls = int(args.dataset.replace('cifar', ''))
     conv_net = hk.transform_with_state(lambda x, t: eval(args.backbone)(num_classes=n_cls)(x, t))
+    # conv_net = hk.transform(lambda x, t: eval(args.backbone)(num_classes=n_cls)(x, t))
 
     seed = args.seed
     np.random.seed(seed)
