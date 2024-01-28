@@ -55,7 +55,16 @@ def main():
                               'train_accuracy': [],
                               'test_loss': [],
                               'test_accuracy': []} for seed in [args.seed]}
-    n_cls = int(args.dataset.replace('cifar', ''))
+    name_to_cls = {'cifar10': 10,
+                   'cifar100': 100,
+                   'svhn': 10,
+                   'fmnist': 10,
+                   }
+    name_to_shape = {'cifar10': [32, 32, 3],
+                    'cifar100': [32, 32, 3],
+                    'svhn': [32, 32, 3],
+                    'fmnist': [28, 28, 1]}
+    n_cls = name_to_cls[args.dataset]
     conv_net = hk.transform_with_state(lambda x, t: eval(args.backbone)(num_classes=n_cls)(x, t))
     # conv_net = hk.transform(lambda x, t: eval(args.backbone)(num_classes=n_cls)(x, t))
 
@@ -65,7 +74,7 @@ def main():
     _, valloader, testloader = get_dataloaders(args.batch_size, args.dataset)
 
     # create a distilled dataset
-    distil_imgs = np.random.randn(n_cls * args.data_size, 32, 32, 3)
+    distil_imgs = np.random.randn(n_cls * args.data_size, *name_to_shape[args.dataset])
     distil_label = np.arange(n_cls).repeat(args.data_size)
     distil_batch = {'image': distil_imgs, 'label': distil_label}
 
@@ -73,12 +82,9 @@ def main():
     out_state = outer_opt.init(distil_imgs)
 
     method, m_params = parse_method(args.method)
-    state = create_train_state(conv_net, jax.random.PRNGKey(seed), args.T * args.outer_steps, args.inner_lr)
     for outer_step in tqdm(range(args.outer_steps)):
-        new_params = jax.tree_util.tree_map_with_path(lambda p, x: np.ones_like(x) if p[-1] == 'scale'
-                                                      else np.zeros_like(x) if p[-1] == 'offset' else
-                                                      np.random.randn(*x.shape) / np.sqrt(x[:-1].size), state.params)
-        state = state.replace(params=new_params)
+        state = create_train_state(conv_net, jax.random.PRNGKey(seed), args.T * args.outer_steps, args.inner_lr,
+                                   inp_shape=name_to_shape[args.dataset])
         x, y = next(iter(valloader))
         val_batch = {'image': x, 'label': y,
                      'lambda': jnp.zeros((y.shape[0],))}
