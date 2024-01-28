@@ -3,16 +3,16 @@ import haiku as hk
 
 
 class CNN(hk.Module):
-    def __init__(self, num_classes=10):
+    def __init__(self, num_classes=10, channels=128):
         super().__init__(name="CNN")
-        self.conv1 = hk.Conv2D(output_channels=8, kernel_shape=(3,3), with_bias=False)
+        self.conv1 = hk.Conv2D(output_channels=channels, kernel_shape=(3,3), with_bias=False)
         self.bn1 = hk.BatchNorm(True, True, 0.9)
-        self.conv2 = hk.Conv2D(output_channels=16, kernel_shape=(3,3), with_bias=False)
+        self.conv2 = hk.Conv2D(output_channels=channels, kernel_shape=(3,3), with_bias=False)
         self.bn2 = hk.BatchNorm(True, True, 0.9)
-        self.conv3 = hk.Conv2D(output_channels=8, kernel_shape=(3,3), with_bias=False)
+        self.conv3 = hk.Conv2D(output_channels=channels, kernel_shape=(3,3), with_bias=False)
         self.bn3 = hk.BatchNorm(True, True, 0.9)
         self.flatten = hk.Flatten()
-        self.linear1 = hk.Linear(32)
+        self.linear1 = hk.Linear(channels)
         self.linear2 = hk.Linear(num_classes)
 
     def __call__(self, x_batch, is_training):
