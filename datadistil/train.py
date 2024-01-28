@@ -11,6 +11,7 @@ from hpo_algs import *
 from argparse import ArgumentParser
 from tqdm.auto import tqdm
 import json
+from functools import partial
 
 
 def parse_method(method: str):
@@ -26,6 +27,13 @@ def parse_method(method: str):
         return 'FISH', None
     else:
         return ValueError('Unknorn method: ' + method)
+
+
+@partial(jax.jit, static_argnums=3)
+def outer_update(grad, opt_state, params, optimizer):
+    updates, new_state = optimizer.update(grad, opt_state, params)
+    new_p = optax.apply_updates(params, updates)
+    return new_p, new_state
 
 
 def main():
@@ -65,8 +73,12 @@ def main():
     out_state = outer_opt.init(distil_imgs)
 
     method, m_params = parse_method(args.method)
+    state = create_train_state(conv_net, jax.random.PRNGKey(seed), args.T * args.outer_steps, args.inner_lr)
     for outer_step in tqdm(range(args.outer_steps)):
-        state = create_train_state(conv_net, jax.random.PRNGKey(seed), args.T * args.outer_steps, args.inner_lr)
+        new_params = jax.tree_util.tree_map_with_path(lambda p, x: np.ones_like(x) if p[-1] == 'scale'
+                                                      else np.zeros_like(x) if p[-1] == 'offset' else
+                                                      np.random.randn(*x.shape) / np.sqrt(x[:-1].size), state.params)
+        state = state.replace(params=new_params)
         x, y = next(iter(valloader))
         val_batch = {'image': x, 'label': y,
                      'lambda': jnp.zeros((y.shape[0],))}
@@ -83,8 +95,7 @@ def main():
         else:
             raise ValueError(f'Unknown method: {method}')
         
-        updates, out_state = outer_opt.update(g_so, out_state, distil_imgs)
-        distil_imgs = optax.apply_updates(distil_imgs, updates)
+        distil_imgs, out_state = outer_update(g_so, out_state, distil_imgs, outer_opt)
 
         # eval
         if outer_step % args.val_freq == 0 and outer_step > 0:
