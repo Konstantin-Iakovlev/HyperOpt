@@ -34,6 +34,7 @@ def main():
     parser.add_argument('--seed', type=int, required=True, default=0)
     parser.add_argument('--T', type=int, required=False, default=20)
     parser.add_argument('--batch_size', type=int, required=False, default=64)
+    parser.add_argument('--channels', type=int, required=False, default=16)
     parser.add_argument('--outer_steps', type=int, required=False, default=20_000)
     parser.add_argument('--method', type=str, required=True, default='luketina')
     parser.add_argument('--dataset', type=str, required=False, default='cifar10')
@@ -57,13 +58,14 @@ def main():
                     'svhn': [32, 32, 3],
                     'fmnist': [28, 28, 1]}
     n_cls = name_to_cls[args.dataset]
-    cnn = hk.transform_with_state(lambda x, t: CNN(16, n_cls, 1) (x, t))
+    cnn = hk.transform_with_state(lambda x, t: CNN(args.channels, n_cls, 1) (x, t))
 
     seed = args.seed
     np.random.seed(seed)
     torch.manual_seed(seed)
     state = create_nas_train_state(cnn, jax.random.PRNGKey(seed), args.T * args.outer_steps,
-                                   learning_rate=args.inner_lr, alpha_lr=args.outer_lr)
+                                   learning_rate=args.inner_lr, alpha_lr=args.outer_lr,
+                                   inp_shape=name_to_shape[args.dataset])
 
     trainloader, valloader, testloader = get_dataloaders(args.batch_size, args.dataset)
     method, m_params = parse_method(args.method)

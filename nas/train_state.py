@@ -76,8 +76,8 @@ class NasTrainState(struct.PyTreeNode):
         
 
 def create_nas_train_state(module, rng, total_steps, learning_rate=0.025, momentum=0.9, w_decay=3e-4,
-                               alpha_lr=1e-4, alpha_decay=1e-3):
-    params, bn_state = module.init(rng, jnp.zeros([1, 32, 32, 3]), True)
+                               alpha_lr=1e-4, alpha_decay=1e-3, inp_shape=[32, 32, 3]):
+    params, bn_state = module.init(rng, jnp.zeros([1, *inp_shape]), True)
     w_params, h_params = hk.data_structures.partition(lambda m, n, p: 'alpha' not in n, params)
     sch = optax.cosine_decay_schedule(learning_rate, total_steps)
     tx_inner = optax.chain(optax.add_decayed_weights(w_decay),
