@@ -135,3 +135,30 @@ def ift_so_grad(state, batches, val_batch, N):
         hvp = B_jvp(state.w_params, state.h_params, batches[-1], state, v)
         so_grad = jax.tree_util.tree_map(lambda x, y: x + y, so_grad, hvp)
     return state, so_grad
+
+
+def fish_so_grad(state, batches, val_batch):
+    """T = len(batches)"""
+    g_so_total = jax.tree_util.tree_map(jnp.zeros_like, state.h_params)
+    T = len(batches)
+    for step, batch in enumerate(batches):
+        # TODO: think of the order of batches
+        new_state = inner_step(state, batch)
+        curr_alpha = jax.grad(loss_fn, argnums=0, has_aux=True)(new_state.w_params, state.h_params,
+                                                                state, val_batch)[0]
+        v = jax.grad(loss_fn, argnums=0, has_aux=True)(new_state.w_params, new_state.h_params,
+                                                       state, batch)[0]
+        B_alpha_jvp = B_jvp(state.w_params, state.h_params, batch, state, curr_alpha)
+        B_v_jvp = B_jvp(state.w_params, state.h_params, batch, state, v)
+        v_norm_sq = jax.tree_util.tree_reduce(
+            lambda s, x: s + (x ** 2).sum(), v, initializer=0.0)
+        # TODO: expm1 is more stable operation
+        c_t = ((1 + state.lr * v_norm_sq) ** (T - 1 - step) - 1) / v_norm_sq
+        # c_t = state.lr * (T - 1 - step)  # Taylor approximation
+        alpha_dot_v = sum(jax.tree_util.tree_leaves(jax.tree_util.tree_map(lambda x, y: (x * y).sum(),
+                                                                           curr_alpha, v)))
+        g_so = jax.tree_util.tree_map(
+            lambda x, y: x - c_t * alpha_dot_v * y, B_alpha_jvp, B_v_jvp)
+        g_so_total = jax.tree_util.tree_map(lambda x, y: x + y, g_so_total, g_so)
+        state = new_state
+    return state, g_so_total

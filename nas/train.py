@@ -90,8 +90,8 @@ def main():
             g_so = jax.tree_util.tree_map(jnp.zeros_like, state.h_params)
         elif method == 'luketina':
             state, g_so = luketina_so_grad(state, batches, val_batch)
-        # elif method == 'FISH':
-        #     state, g_so = fish_so_grad(state, batches, val_batch)
+        elif method == 'FISH':
+            state, g_so = fish_so_grad(state, batches, val_batch)
         else:
             raise ValueError('Unknown ' + method)
         
