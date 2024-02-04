@@ -82,8 +82,8 @@ def main():
             state, g_so = proposed_so_grad(state, batches, val_batch, m_params)
         elif method == 'DrMAD':
             state, g_so = drmad_grad(state, batches, val_batch)
-        # elif method == 'IFT':
-        #     state, g_so = IFT_grad(state, batches, val_batch, m_params)
+        elif method == 'IFT':
+            state, g_so = ift_so_grad(state, batches, val_batch, m_params)
         elif method == 'fo':
             for batch in batches:
                 state = inner_step(state, batch)

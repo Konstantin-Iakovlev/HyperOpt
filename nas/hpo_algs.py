@@ -120,3 +120,18 @@ def luketina_so_grad(state, batches, val_batch):
                                         state, curr_alpha),
                                   g_so)
     return state, g_so
+
+
+def ift_so_grad(state, batches, val_batch, N):
+    """T = len(batches)"""
+    T = len(batches)
+    for step, batch in enumerate(batches):
+        state = inner_step(state, batch)
+    v = jax.grad(loss_fn, argnums=0, has_aux=True)(state.w_params, state.h_params,
+                                                   state, val_batch)[0]
+    so_grad = B_jvp(state.w_params, state.h_params, batches[-1], state, v)
+    for k in range(N):
+        v = A_jvp(state.w_params, batches[-1], state, v)
+        hvp = B_jvp(state.w_params, state.h_params, batches[-1], state, v)
+        so_grad = jax.tree_util.tree_map(lambda x, y: x + y, so_grad, hvp)
+    return state, so_grad
