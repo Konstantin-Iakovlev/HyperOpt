@@ -42,8 +42,14 @@ def inner_step(state: NasTrainState, batch):
 
 
 @jax.jit
-def B_jvp(w_params, h_params, batch, state, v, eps=1e-7):
+def normalize(v):
+    return jnp.sqrt(jax.tree_util.tree_reduce(lambda v, x: v + (x ** 2).sum(), v, 0))
+
+
+@jax.jit
+def B_jvp(w_params, h_params, batch, state, v, r=1e-2):
     """d^2 L1 / dl dw v"""
+    eps = r / normalize(v)
     w_plus = jax.tree_util.tree_map(lambda x, y: x + eps * y, w_params, v)
     w_minus = jax.tree_util.tree_map(lambda x, y: x - eps * y, w_params, v)
     dl_dlam = jax.grad(loss_fn, argnums=1, has_aux=True)
@@ -53,7 +59,8 @@ def B_jvp(w_params, h_params, batch, state, v, eps=1e-7):
 
 
 @jax.jit
-def A_jvp(w_params, batch, state, v, eps=1e-7):
+def A_jvp(w_params, batch, state, v, r=1e-2):
+    eps = r / normalize(v)
     w_plus = jax.tree_util.tree_map(lambda x, y: x + eps * y, w_params, v)
     w_minus = jax.tree_util.tree_map(lambda x, y: x - eps * y, w_params, v)
     dl_dw = jax.grad(loss_fn, argnums=0, has_aux=True)
