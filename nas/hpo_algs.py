@@ -19,6 +19,12 @@ def loss_fn(w_params, h_params, state: NasTrainState, batch):
 
 
 @jax.jit
+def grad_w_loss_fn(w_params, h_params, state, batch):
+    grad_fn = jax.grad(loss_fn, argnums=0, has_aux=True) 
+    return grad_fn(w_params, h_params, state, batch)[0]
+
+
+@jax.jit
 def compute_metrics(*, state, batch):
     params = hk.data_structures.merge(state.w_params, state.h_params)
     logits, _ = state.apply_fn(
@@ -73,7 +79,8 @@ def A_jvp(w_params, batch, state, v, r=1e-2):
 
 @jax.jit
 def fo_grad(state, val_batch):
-    return jax.grad(loss_fn, argnums=1, has_aux=True)(state.w_params, state.h_params, state, val_batch)[0]
+    return jax.grad(loss_fn, argnums=1, has_aux=True)(state.w_params,
+                                                      state.h_params, state, val_batch)[0]
 
 
 def drmad_grad(state, batches, val_batch):
@@ -84,8 +91,8 @@ def drmad_grad(state, batches, val_batch):
     for step, batch in enumerate(batches):
         state = inner_step(state, batch)
     w_T = state.w_params
-    alpha = jax.grad(loss_fn, argnums=0, has_aux=True)(
-        state.w_params, state.h_params, state, val_batch)[0]
+    alpha = grad_w_loss_fn(
+        state.w_params, state.h_params, state, val_batch)
     for step, batch in enumerate(batches[::-1]):
         t = T - step
         w_tm1 = jax.tree_util.tree_map(lambda x, y: (
@@ -104,8 +111,7 @@ def proposed_so_grad(state, batches, val_batch, gamma):
     T = len(batches)
     for step, batch in enumerate(batches):
         new_state = inner_step(state, batch)
-        curr_alpha = jax.grad(loss_fn, argnums=0, has_aux=True)(
-            new_state.w_params, state.h_params, state, val_batch)[0]
+        curr_alpha = grad_w_loss_fn(new_state.w_params, state.h_params, state, val_batch)
         g_so = jax.tree_util.tree_map(lambda x, y: x * gamma ** (T - 1 - step) + y,
                                       B_jvp(state.w_params, state.h_params, batch,
                                             state, curr_alpha),
@@ -120,8 +126,7 @@ def luketina_so_grad(state, batches, val_batch):
     T = len(batches)
     for step, batch in enumerate(batches):
         state = inner_step(state, batch)
-    curr_alpha = jax.grad(loss_fn, argnums=0, has_aux=True)(
-        state.w_params, state.h_params, state, val_batch)[0]
+    curr_alpha = grad_w_loss_fn(state.w_params, state.h_params, state, val_batch)
     g_so = jax.tree_util.tree_map(lambda x, y: x + y,
                                   B_jvp(state.w_params, state.h_params, batch,
                                         state, curr_alpha),
@@ -134,8 +139,7 @@ def ift_so_grad(state, batches, val_batch, N):
     T = len(batches)
     for step, batch in enumerate(batches):
         state = inner_step(state, batch)
-    v = jax.grad(loss_fn, argnums=0, has_aux=True)(state.w_params, state.h_params,
-                                                   state, val_batch)[0]
+    v = grad_w_loss_fn(state.w_params, state.h_params, state, val_batch)
     so_grad = B_jvp(state.w_params, state.h_params, batches[-1], state, v)
     for k in range(N):
         v = A_jvp(state.w_params, batches[-1], state, v)
@@ -151,10 +155,8 @@ def fish_so_grad(state, batches, val_batch):
     for step, batch in enumerate(batches):
         # TODO: think of the order of batches
         new_state = inner_step(state, batch)
-        curr_alpha = jax.grad(loss_fn, argnums=0, has_aux=True)(new_state.w_params, state.h_params,
-                                                                state, val_batch)[0]
-        v = jax.grad(loss_fn, argnums=0, has_aux=True)(new_state.w_params, new_state.h_params,
-                                                       state, batch)[0]
+        curr_alpha = grad_w_loss_fn(new_state.w_params, state.h_params, state, val_batch)
+        v = grad_w_loss_fn(new_state.w_params, new_state.h_params, state, batch)
         B_alpha_jvp = B_jvp(state.w_params, state.h_params, batch, state, curr_alpha)
         B_v_jvp = B_jvp(state.w_params, state.h_params, batch, state, v)
         v_norm_sq = jax.tree_util.tree_reduce(
