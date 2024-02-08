@@ -49,7 +49,8 @@ def get_dataloaders_fmnist(corruption: float, batch_size: int):
     return trainloader, valloader, testloader
 
 
-def get_dataloaders_cifar(corruption: float, batch_size: int, num_samples, ds_name='cifar10'):
+def get_dataloaders_cifar(corruption: float, batch_size: int, num_samples: int,
+                          imbalance_factor=1, ds_name='cifar10'):
     CIFAR_10_MEAN = [0.49139968, 0.48215827, 0.44653124]
     CIFAR_10_STD = [0.24703233, 0.24348505, 0.26158768]
     CIFAR_100_MEAN = (0.5070751592371323, 0.48654887331495095, 0.4409178433670343)
@@ -81,7 +82,16 @@ def get_dataloaders_cifar(corruption: float, batch_size: int, num_samples, ds_na
     num_train = len(train_data)
     split = int(np.floor(num_train * 0.8))
 
-    trainloader = DataLoader(torch.utils.data.Subset(train_data, range(split)), batch_size=batch_size,
+    train_ds = torch.utils.data.Subset(train_data, range(split))
+    n_cls = 10 if ds_name.endswith('10') else 100
+    cls_to_images = {i: [] for i in range(n_cls)}
+    for x, y in train_ds:
+        cls_to_images[y].append(x)
+    cls_to_ratio = {i: 1 / (imbalance_factor ** (i / (n_cls - 1))) for i in range(n_cls)}
+    cls_to_images = {i : cls_to_images[i][:int(len(cls_to_images[i]) * cls_to_ratio[i])] for i in cls_to_images}
+    train_ds = [(x, y) for y in cls_to_images for x in cls_to_images[y]]
+    print('Trian ds len', len(train_ds))
+    trainloader = DataLoader(train_ds, batch_size=batch_size,
                              shuffle=True, drop_last=True, collate_fn=numpy_collate)
 
     valloader = DataLoader(torch.utils.data.Subset(train_data, range(split, len(train_data))),

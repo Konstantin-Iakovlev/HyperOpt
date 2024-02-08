@@ -4,7 +4,7 @@ import jax.numpy as jnp
 import haiku as hk
 from train_state import create_dw_train_state
 from model import CNN
-from unet import Unet
+from haiku.nets import *
 from dataset import get_dataloaders_cifar
 import numpy as np
 from hpo_algs import *
@@ -34,6 +34,7 @@ def main():
     parser = ArgumentParser()
     parser.add_argument('--seed', type=int, required=True, default=0)
     parser.add_argument('--corruption', type=float, required=True, default=0.0)
+    parser.add_argument('--imb_fact', type=int, required=True, default=1)
     parser.add_argument('--T', type=int, required=False, default=20)
     parser.add_argument('--batch_size', type=int, required=False, default=128)
     parser.add_argument('--data_size', type=int, required=False, default=1_000_000)
@@ -41,7 +42,7 @@ def main():
     parser.add_argument('--wnet_hidden', type=int, required=False, default=100)
     parser.add_argument('--method', type=str, required=True, default='proposed_0.999')
     parser.add_argument('--backbone', type=str, required=False, default='ResNet18')
-    parser.add_argument('--dataset', type=str, required=False, default='cifar100')
+    parser.add_argument('--dataset', type=str, required=False, default='cifar10')
     parser.add_argument('--inner_lr', type=float, required=False, default=1e-1)
     parser.add_argument('--outer_lr', type=float, required=False, default=1e-2)
     parser.add_argument('--val_freq', type=int, required=False, default=20)
@@ -53,19 +54,19 @@ def main():
                     'test_accuracy': []} for seed in [args.seed]}
 
     n_cls = int(args.dataset.replace('cifar', ''))
-    conv_net = hk.transform_with_state(lambda x, t: eval('hk.nets.' + args.backbone)(num_classes=n_cls)(x, t))
-    # wnet = hk.transform(lambda x: hk.nets.MLP([args.wnet_hidden, 1],
-                                            # activation=jax.nn.tanh, activate_final=False)(x))
-    unet = hk.transform(lambda x, r: Unet(3, 3)(x, r))
+    conv_net = hk.transform_with_state(lambda x, t: eval(args.backbone)(num_classes=n_cls)(x, t))
+    wnet = hk.transform(lambda x: jax.nn.sigmoid(MLP([args.wnet_hidden, 1],
+                                            activation=jax.nn.relu, activate_final=False)(x)))
 
     seed = args.seed
     np.random.seed(seed)
     torch.manual_seed(seed)
-    state = create_dw_train_state(conv_net, unet, jax.random.PRNGKey(seed), args.T * args.outer_steps,
+    state = create_dw_train_state(conv_net, wnet, jax.random.PRNGKey(seed), args.T * args.outer_steps,
                                 learning_rate=args.inner_lr, alpha_lr=args.outer_lr, input_shape=[32, 32, 3])
 
     trainloader, valloader, testloader = get_dataloaders_cifar(args.corruption, batch_size=args.batch_size,
                                                                num_samples=args.data_size,
+                                                               imbalance_factor=args.imb_fact,
                                                                ds_name=args.dataset)
     method, m_params = parse_method(args.method)
     for outer_step in tqdm(range(args.outer_steps)):
@@ -107,6 +108,7 @@ def main():
             state = state.replace(metrics=state.metrics.empty())
     acc_arr = np.stack([metrics_history[s]['test_accuracy'] for s in [seed]], axis=0)
     print('Finished with', acc_arr.max(-1))
+    print(acc_arr)
     with open(f'{args.method}_{seed}.json', 'w') as f:
         f.write(json.dumps({seed: float(acc_arr.max(-1).item())}))
 
