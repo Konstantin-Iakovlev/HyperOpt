@@ -33,7 +33,6 @@ def parse_method(method: str):
 def main():
     parser = ArgumentParser()
     parser.add_argument('--seed', type=int, required=True, default=0)
-    parser.add_argument('--corruption', type=float, required=True, default=0.0)
     parser.add_argument('--imb_fact', type=int, required=True, default=1)
     parser.add_argument('--T', type=int, required=False, default=20)
     parser.add_argument('--batch_size', type=int, required=False, default=128)
@@ -53,7 +52,13 @@ def main():
                     'test_loss': [],
                     'test_accuracy': []} for seed in [args.seed]}
 
-    n_cls = int(args.dataset.replace('cifar', ''))
+    n_cls = 100 if args.dataset == 'cifar100' else 10
+    name_to_shape = {'cifar10': [32, 32, 3],
+                    'cifar100': [32, 32, 3],
+                    'svhn': [32, 32, 3],
+                    'fmnist': [28, 28, 1],
+                    'mnist': [28, 28, 1]
+                    }
     conv_net = hk.transform_with_state(lambda x, t: eval(args.backbone)(num_classes=n_cls)(x, t))
     wnet = hk.transform(lambda x: jax.nn.sigmoid(MLP([args.wnet_hidden, 1],
                                             activation=jax.nn.relu, activate_final=False)(x)))
@@ -62,9 +67,10 @@ def main():
     np.random.seed(seed)
     torch.manual_seed(seed)
     state = create_dw_train_state(conv_net, wnet, jax.random.PRNGKey(seed), args.T * args.outer_steps,
-                                learning_rate=args.inner_lr, alpha_lr=args.outer_lr, input_shape=[32, 32, 3])
+                                learning_rate=args.inner_lr, alpha_lr=args.outer_lr,
+                                input_shape=name_to_shape[args.dataset])
 
-    trainloader, valloader, testloader = get_dataloaders_cifar(args.corruption, batch_size=args.batch_size,
+    trainloader, valloader, testloader = get_dataloaders_cifar(batch_size=args.batch_size,
                                                                num_samples=args.data_size,
                                                                imbalance_factor=args.imb_fact,
                                                                ds_name=args.dataset)
