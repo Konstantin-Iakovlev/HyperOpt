@@ -61,7 +61,7 @@ def main():
                     }
     conv_net = hk.transform_with_state(lambda x, t: eval(args.backbone)(num_classes=n_cls)(x, t))
     wnet = hk.transform(lambda x: jax.nn.sigmoid(MLP([args.wnet_hidden, 1],
-                                            activation=jax.nn.relu, activate_final=False)(x)))
+                                            activation=jax.nn.tanh, activate_final=False)(x)))
 
     seed = args.seed
     np.random.seed(seed)
