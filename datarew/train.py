@@ -5,6 +5,7 @@ import haiku as hk
 from train_state import create_dw_train_state
 from model import CNN
 from haiku.nets import *
+from wide_res_net import WideResNet
 from dataset import get_dataloaders_cifar
 import numpy as np
 from hpo_algs import *
@@ -59,7 +60,11 @@ def main():
                     'fmnist': [28, 28, 1],
                     'mnist': [28, 28, 1]
                     }
-    conv_net = hk.transform_with_state(lambda x, t: eval(args.backbone)(num_classes=n_cls)(x, t))
+    if args.backbone == 'WideResNet':
+        conv_net = hk.transform_with_state(lambda x, t: WideResNet(num_classes=n_cls,
+                                                                   depth=16, width=2)(x, is_training=t))
+    else:
+        conv_net = hk.transform_with_state(lambda x, t: eval(args.backbone)(num_classes=n_cls)(x, t))
     wnet = hk.transform(lambda x: jax.nn.sigmoid(MLP([args.wnet_hidden, 1],
                                             activation=jax.nn.tanh, activate_final=False)(x)))
 
