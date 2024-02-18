@@ -119,7 +119,7 @@ def proposed_so_grad(state, batches, val_batch, gamma):
     for step, batch in enumerate(batches):
         new_state = inner_step(state, batch)
         curr_alpha = loss_fn_val_grad_params(new_state.w_params, state.h_params, state, val_batch)
-        g_so = jax.tree_util.tree_map(lambda x, y: x * gamma ** (T - 1 - step) + y,
+        g_so = jax.tree_util.tree_map(lambda x, y: x * (1 - gamma * state.lr) ** (T - 1 - step) + y,
                                       B_jvp(state.w_params, state.h_params, batch,
                                             state, curr_alpha),
                                      g_so)
