@@ -108,7 +108,10 @@ def get_dataloaders_cifar(batch_size: int, num_samples: int,
 
     valloader = DataLoader(torch.utils.data.Subset(train_data, range(split, len(train_data))),
                            batch_size=batch_size, shuffle=True, drop_last=True, collate_fn=numpy_collate)
-    test_data = ds_cls(root='./data', train=False, download=True, transform=train_transform)
+    try:
+        test_data = ds_cls(root='./data', train=False, download=True, transform=train_transform)
+    except:
+        test_data = ds_cls(root='./data', split='test', download=True, transform=train_transform)
     testloader = DataLoader(test_data, batch_size=batch_size, shuffle=False, drop_last=False,
                             collate_fn=numpy_collate)
 
