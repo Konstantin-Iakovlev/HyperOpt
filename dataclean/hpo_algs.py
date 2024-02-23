@@ -1,4 +1,5 @@
 import jax
+import jax.numpy as jnp
 import optax
 from train_state import DataCleanTrainState
 
@@ -38,9 +39,15 @@ def inner_step(state: DataCleanTrainState, batch):
 
 
 @jax.jit
-def B_jvp(params, batch, state, v):
-    w_plus = jax.tree_util.tree_map(lambda x, y: x + 1e-7 * y, params, v)
-    w_minus = jax.tree_util.tree_map(lambda x, y: x - 1e-7 * y, params, v)
+def normalize(v):
+    return jnp.sqrt(jax.tree_util.tree_reduce(lambda v, x: v + (x ** 2).sum(), v, 0))
+
+
+@jax.jit
+def B_jvp(params, batch, state, v, r=1e-2):
+    eps = r / normalize(v)
+    w_plus = jax.tree_util.tree_map(lambda x, y: x + eps * y, params, v)
+    w_minus = jax.tree_util.tree_map(lambda x, y: x - eps * y, params, v)
 
     def fun(w, h):
         return loss_fn(w, state,
@@ -52,9 +59,10 @@ def B_jvp(params, batch, state, v):
 
 
 @jax.jit
-def A_jvp(params, batch, state, v):
-    w_plus = jax.tree_util.tree_map(lambda x, y: x + 1e-7 * y, params, v)
-    w_minus = jax.tree_util.tree_map(lambda x, y: x - 1e-7 * y, params, v)
+def A_jvp(params, batch, state, v, r=1e-2):
+    eps = r / normalize(v)
+    w_plus = jax.tree_util.tree_map(lambda x, y: x + eps * y, params, v)
+    w_minus = jax.tree_util.tree_map(lambda x, y: x - eps * y, params, v)
     g_plus = loss_fn_grad_params(w_plus, state, batch)
     g_minus = loss_fn_grad_params(w_minus, state, batch)
     hvp = jax.tree_util.tree_map(lambda x, y: (
@@ -133,20 +141,17 @@ def drmad_grad(state, batches, val_batch):
     return state, g_so_arr
 
 
-def IFT_grad(state, batches, val_batch, N, K):
+def IFT_grad(state, batches, val_batch, N):
     """N + 1 - the number of terms from Neuman series. See (9) from i-DARTS; the number of online opt. steps"""
     g_so_arr = []
-    assert len(batches) % K == 0
     for step, batch in enumerate(batches):
         state = inner_step(state, batch)
-        if step >= len(batches) - K:
-            v = loss_fn_grad_params(state.params, state, val_batch)
-            so_grad = B_jvp(state.params, batches[-1], state, v)
-            for k in range(1, N + 1):
-                v = A_jvp(state.params, batches[-1], state, v)
-                hvp = B_jvp(state.params, batches[-1], state, v)
-                so_grad = jax.tree_util.tree_map(
-                    lambda x, y: x + y, so_grad, hvp)
-            g_so_arr.append(so_grad)
-            # (N + 1) * K JVPs
-    return state, g_so_arr * (len(batches) // K)
+    v = loss_fn_grad_params(state.params, state, val_batch)
+    so_grad = B_jvp(state.params, batches[-1], state, v)
+    for k in range(1, N + 1):
+        v = A_jvp(state.params, batches[-1], state, v)
+        hvp = B_jvp(state.params, batches[-1], state, v)
+        so_grad = jax.tree_util.tree_map(
+            lambda x, y: x + y, so_grad, hvp)
+    g_so_arr.append(so_grad)
+    return state, g_so_arr

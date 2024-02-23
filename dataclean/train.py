@@ -17,7 +17,7 @@ def parse_method(method: str):
     elif 'proposed' in method:
         return 'proposed', float(method.split('_')[-1])
     elif 'IFT' in method:
-        return 'IFT', *list(map(int, method.split('_')[-2:]))
+        return 'IFT', int(method.split('_')[-1])
     elif method == 'baseline':
         return 'baseline', None
     elif method == 'luketina':
@@ -79,7 +79,7 @@ def main():
         elif method == 'DrMAD':
             state, g_so_arr = drmad_grad(state, batches, val_batch)
         elif method == 'IFT':
-            state, g_so_arr = IFT_grad(state, batches, val_batch, *m_params)
+            state, g_so_arr = IFT_grad(state, batches, val_batch, m_params)
         elif method == 'baseline':
             g_so_arr = [jnp.zeros([args.batch_size,], dtype=jnp.float32)] * args.T
             for batch in batches:
