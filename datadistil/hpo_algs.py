@@ -39,9 +39,15 @@ def inner_step(state: DataCleanTrainState, batch):
 
 
 @jax.jit
-def B_jvp(params, batch, state, v):
-    w_plus = jax.tree_util.tree_map(lambda x, y: x + 1e-7 * y, params, v)
-    w_minus = jax.tree_util.tree_map(lambda x, y: x - 1e-7 * y, params, v)
+def normalize(v):
+    return jnp.sqrt(jax.tree_util.tree_reduce(lambda v, x: v + (x ** 2).sum(), v, 0))
+
+
+@jax.jit
+def B_jvp(params, batch, state, v, r=1e-2):
+    eps = r / normalize(v)
+    w_plus = jax.tree_util.tree_map(lambda x, y: x + eps * y, params, v)
+    w_minus = jax.tree_util.tree_map(lambda x, y: x - eps * y, params, v)
 
     def fun(w, h):
         return loss_fn(w, state,
@@ -53,9 +59,10 @@ def B_jvp(params, batch, state, v):
 
 
 @jax.jit
-def A_jvp(params, batch, state, v):
-    w_plus = jax.tree_util.tree_map(lambda x, y: x + 1e-7 * y, params, v)
-    w_minus = jax.tree_util.tree_map(lambda x, y: x - 1e-7 * y, params, v)
+def A_jvp(params, batch, state, v, r=1e-2):
+    eps = r / normalize(v)
+    w_plus = jax.tree_util.tree_map(lambda x, y: x + eps * y, params, v)
+    w_minus = jax.tree_util.tree_map(lambda x, y: x - eps * y, params, v)
     g_plus = loss_fn_grad_params(w_plus, state, batch)
     g_minus = loss_fn_grad_params(w_minus, state, batch)
     hvp = jax.tree_util.tree_map(lambda x, y: (
