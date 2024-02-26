@@ -36,7 +36,6 @@ def main():
     parser.add_argument('--batch_size', type=int, required=False, default=128)
     parser.add_argument('--data_size', type=int, required=False, default=1_000_000)
     parser.add_argument('--outer_steps', type=int, required=False, default=1000)
-    parser.add_argument('--wnet_hidden', type=int, required=False, default=100)
     parser.add_argument('--method', type=str, required=True, default='proposed_0.999')
     parser.add_argument('--backbone', type=str, required=False, default='ResNet18')
     parser.add_argument('--dataset', type=str, required=False, default='cifar10')
@@ -49,13 +48,20 @@ def main():
                               'train_accuracy': [],
                               'test_loss': [],
                               'test_accuracy': []} for seed in [args.seed]}
-    n_cls = int(args.dataset.replace('cifar', ''))
+    name_to_shape = {'cifar10': [32, 32, 3],
+                    'cifar100': [32, 32, 3],
+                    'svhn': [32, 32, 3],
+                    'fmnist': [28, 28, 1],
+                    'mnist': [28, 28, 1]
+                    }
+    n_cls = 100 if args.dataset == 'cifar100' else 10
     conv_net = hk.transform_with_state(lambda x, t: eval('hk.nets.' + args.backbone)(num_classes=n_cls)(x, t))
 
     seed = args.seed
     np.random.seed(seed)
     torch.manual_seed(seed)
-    state = create_train_state(conv_net, jax.random.PRNGKey(seed), args.T * args.outer_steps, args.inner_lr)
+    state = create_train_state(conv_net, jax.random.PRNGKey(seed), args.T * args.outer_steps, args.inner_lr,
+                               inp_shape=name_to_shape[args.dataset])
     trainloader, valloader, testloader = get_dataloaders_cifar(args.corruption, args.batch_size, args.data_size, args.dataset)
     w_logits = jnp.zeros([(len(trainloader) + 1) * args.batch_size,], dtype=jnp.float32)
     outer_opt = optax.adam(args.outer_lr)
