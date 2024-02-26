@@ -61,7 +61,7 @@ def get_dataloaders_cifar(corruption: float, batch_size: int, num_samples, ds_na
     ])
 
     np.random.seed(0)
-    ds_cls = torchvision.datasets.CIFAR10 if ds_name.endswith('10') else torchvision.datasets.CIFAR100
+    ds_cls = name_to_cls[ds_name]
     train_data = ds_cls(root='./data', train=True, download=True, transform=train_transform,
                                               target_transform=lambda y: np.random.randint(n_cls) \
                                                 if np.random.rand() < corruption else y)
