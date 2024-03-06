@@ -62,7 +62,8 @@ def create_train_state(module, rng, inner_steps, learning_rate=0.1, momentum=0.9
                        inp_shape=[32, 32, 3]):
     """Creates an initial `TrainState`."""
     params, bn_state = module.init(rng, jnp.ones([1] + inp_shape), True)
-    sch = optax.cosine_decay_schedule(learning_rate, inner_steps)
+    # sch = optax.cosine_decay_schedule(learning_rate, inner_steps)
+    sch = optax.constant_schedule(learning_rate)
     opt = optax.chain(optax.add_decayed_weights(decay),
                       optax.sgd(learning_rate, momentum))
     return DataCleanTrainState.create(apply_fn=module.apply,
