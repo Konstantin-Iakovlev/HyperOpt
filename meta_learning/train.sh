@@ -15,6 +15,6 @@ do
     --val_classes 50 \
     --T 10 --outer_steps 301 \
     --meta_batch_size 4 \
-    --outer_lr 1e-1 --val_freq 20 \
-    --inner_lr 1e-2
+    --outer_lr 1e-3 --val_freq 20 \
+    --inner_lr 1e-1
 done

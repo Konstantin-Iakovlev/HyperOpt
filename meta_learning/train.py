@@ -52,7 +52,7 @@ def main():
                               'train_accuracy': [],
                               'test_loss': [],
                               'test_accuracy': []} for seed in [args.seed]}
-    conv_net = hk.transform(lambda x: CNN(num_cls=args.num_ways)(x))
+    conv_net = hk.transform_with_state(lambda x, t: CNN(num_cls=args.num_ways)(x, t))
 
     seed = args.seed
     np.random.seed(seed)
@@ -67,7 +67,7 @@ def main():
     
     meta_grad = jax.tree_util.tree_map(jnp.zeros_like, state.h_params)
     for outer_step in tqdm(range(args.meta_batch_size * args.outer_steps)):
-        params = conv_net.init(jax.random.PRNGKey(seed), jnp.ones([1, 32, 32, 3]))
+        params, _ = conv_net.init(jax.random.PRNGKey(seed), jnp.ones([1, 32, 32, 3]), True)
         w_params, _ = hk.data_structures.partition(lambda m, n, p: 'linear' in m, params)
         inn_state = state.inner_opt.init(w_params)
         state = state.replace(w_params=w_params, inner_opt_state=inn_state)
@@ -101,7 +101,7 @@ def main():
         # eval
         if outer_step % (args.val_freq * args.meta_batch_size) == 0 and outer_step > 0:
             for _ in range(100):
-                params = conv_net.init(jax.random.PRNGKey(seed), jnp.ones([1, 32, 32, 3]))
+                params, _ = conv_net.init(jax.random.PRNGKey(seed), jnp.ones([1, 32, 32, 3]), True)
                 w_params, _ = hk.data_structures.partition(lambda m, n, p: 'linear' in m, params)
                 inn_state = state.inner_opt.init(w_params)
                 state = state.replace(w_params=w_params, inner_opt_state=inn_state)

@@ -21,12 +21,12 @@ class BiLevelTrainState(struct.PyTreeNode):
     apply_fn: Callable = struct.field(pytree_node=False)
     w_params: core.FrozenDict[str, Any] = struct.field(pytree_node=True)
     h_params: core.FrozenDict[str, Any] = struct.field(pytree_node=True)
+    bn_state: core.FrozenDict[str, Any] = struct.field(pytree_node=True)
     inner_opt: optax.GradientTransformation = struct.field(pytree_node=False)
     inner_opt_state: optax.OptState = struct.field(pytree_node=True)
     outer_opt: optax.GradientTransformation = struct.field(pytree_node=False)
     outer_opt_state: optax.OptState = struct.field(pytree_node=True)
     lr: float  # inner lr
-
 
     @classmethod
     def create(cls, *, apply_fn, w_params, h_params, inner_opt, outer_opt, **kwargs):
@@ -45,7 +45,8 @@ class BiLevelTrainState(struct.PyTreeNode):
         )
 
     def apply_w_gradients(self, *, w_grads, **kwargs):
-        updates, new_inn_state = self.inner_opt.update(w_grads, self.inner_opt_state, self.w_params)
+        updates, new_inn_state = self.inner_opt.update(
+            w_grads, self.inner_opt_state, self.w_params)
         new_params = optax.apply_updates(self.w_params, updates)
         return self.replace(
             step=self.step + 1,
@@ -55,7 +56,8 @@ class BiLevelTrainState(struct.PyTreeNode):
         )
 
     def apply_h_gradients(self, *, h_grads, **kwargs):
-        updates, new_out_state = self.outer_opt.update(h_grads, self.outer_opt_state, self.h_params)
+        updates, new_out_state = self.outer_opt.update(
+            h_grads, self.outer_opt_state, self.h_params)
         new_params = optax.apply_updates(self.h_params, updates)
         return self.replace(
             step=self.step + 1,
@@ -63,16 +65,17 @@ class BiLevelTrainState(struct.PyTreeNode):
             outer_opt_state=new_out_state,
             **kwargs
         )
-        
+
 
 def create_bilevel_train_state(module, rng, learning_rate, outer_lr, momentum=0.9, weight_decay=1e-4):
     """Creates an initial `TrainState`."""
-    params = module.init(rng, jnp.ones([1, 32, 32, 3]))
-    w_params, h_params = hk.data_structures.partition(lambda m, n, p: 'linear' in m, params)
+    params, bn_state = module.init(rng, jnp.ones([1, 32, 32, 3]), True)
+    w_params, h_params = hk.data_structures.partition(
+        lambda m, n, p: 'linear' in m, params)
     tx_inner = optax.chain(optax.add_decayed_weights(weight_decay),
                            optax.sgd(learning_rate, momentum=momentum))
     tx_outer = optax.adam(outer_lr)
     return BiLevelTrainState.create(
-      apply_fn=module.apply, w_params=w_params, h_params=h_params, inner_opt=tx_inner, outer_opt=tx_outer,
+        apply_fn=module.apply, w_params=w_params, h_params=h_params,
+        inner_opt=tx_inner, outer_opt=tx_outer, bn_state=bn_state,
         metrics=Metrics.empty(), lr=learning_rate)
-    

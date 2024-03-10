@@ -6,18 +6,19 @@ from train_state import BiLevelTrainState
 
 
 @jax.jit
-def loss_fn(w_params, h_params, state, batch):
+def loss_fn(w_params, h_params, state: BiLevelTrainState, batch):
     params = hk.data_structures.merge(w_params, h_params)
-    logits = state.apply_fn(params, None, batch['image'])
+    logits, bn_state = state.apply_fn(params, state.bn_state, None,
+                                      batch['image'], True)
     loss = optax.softmax_cross_entropy_with_integer_labels(
         logits=logits, labels=batch['label']).mean()
-    return loss
+    return loss, state.replace(bn_state=bn_state)
 
 
 @jax.jit
 def compute_metrics(*, state, batch):
     params = hk.data_structures.merge(state.w_params, state.h_params)
-    logits = state.apply_fn(params, None, batch['image'])
+    logits, _ = state.apply_fn(params, state.bn_state, None, batch['image'], False)
     loss = optax.softmax_cross_entropy_with_integer_labels(logits=logits, labels=batch['label']).mean()
     metric_updates = state.metrics.single_from_model_output(logits=logits, labels=batch['label'], loss=loss)
     metrics = state.metrics.merge(metric_updates)
@@ -27,8 +28,8 @@ def compute_metrics(*, state, batch):
 
 @jax.jit
 def inner_step(state: BiLevelTrainState, batch):    
-    grad_fn = jax.grad(loss_fn, argnums=0)
-    grads = grad_fn(state.w_params, state.h_params, state, batch)
+    grad_fn = jax.grad(loss_fn, argnums=0, has_aux=True)
+    grads = grad_fn(state.w_params, state.h_params, state, batch)[0]
     state = state.apply_w_gradients(w_grads=grads)
     return state
 
@@ -44,9 +45,9 @@ def B_jvp(w_params, h_params, batch, state, v, r=1e-2):
     eps = r / normalize(v)
     w_plus = jax.tree_util.tree_map(lambda x, y: x + eps * y, w_params, v)
     w_minus = jax.tree_util.tree_map(lambda x, y: x - eps * y, w_params, v)
-    dl_dlam = jax.grad(loss_fn, argnums=1)
-    g_plus = dl_dlam(w_plus, h_params, state, batch)
-    g_minus = dl_dlam(w_minus, h_params, state, batch)
+    dl_dlam = jax.grad(loss_fn, argnums=1, has_aux=True)
+    g_plus = dl_dlam(w_plus, h_params, state, batch)[0]
+    g_minus = dl_dlam(w_minus, h_params, state, batch)[0]
     return jax.tree_util.tree_map(lambda x, y: -state.lr * (x - y) / (2 * eps), g_plus, g_minus)
 
 
@@ -55,16 +56,16 @@ def A_jvp(w_params, batch, state, v, r=1e-2):
     eps = r / normalize(v)
     w_plus = jax.tree_util.tree_map(lambda x, y: x + eps * y, w_params, v)
     w_minus = jax.tree_util.tree_map(lambda x, y: x - eps * y, w_params, v)
-    dl_dw = jax.grad(loss_fn, argnums=0)
-    g_plus = dl_dw(w_plus, state.h_params, state, batch)
-    g_minus = dl_dw(w_minus, state.h_params, state, batch)
+    dl_dw = jax.grad(loss_fn, argnums=0, has_aux=True)
+    g_plus = dl_dw(w_plus, state.h_params, state, batch)[0]
+    g_minus = dl_dw(w_minus, state.h_params, state, batch)[0]
     hvp = jax.tree_util.tree_map(lambda x, y: (x - y) / (2 * eps), g_plus, g_minus)
     return jax.tree_util.tree_map(lambda x, y: x - state.lr * y, v, hvp)
 
 
 @jax.jit
 def fo_grad(state, val_batch):
-    return jax.grad(loss_fn, argnums=1)(state.w_params, state.h_params, state, val_batch)
+    return jax.grad(loss_fn, argnums=1, has_aux=True)(state.w_params, state.h_params, state, val_batch)[0]
 
 
 def drmad_grad(state, batches, val_batch):
@@ -75,7 +76,7 @@ def drmad_grad(state, batches, val_batch):
     for step, batch in enumerate(batches):
         state = inner_step(state, batch)
     w_T = state.w_params
-    alpha = jax.grad(loss_fn, argnums=0)(state.w_params, state.h_params, state, val_batch)
+    alpha = jax.grad(loss_fn, argnums=0, has_aux=True)(state.w_params, state.h_params, state, val_batch)[0]
     for step, batch in enumerate(batches[::-1]):
         t = T - step
         w_tm1 = jax.tree_util.tree_map(lambda x, y: (1 - (t - 1) / T) * x + (t - 1) / T * y, w_0, w_T)
@@ -91,7 +92,8 @@ def proposed_so_grad(state, batches, val_batch, gamma):
     T = len(batches)
     for step, batch in enumerate(batches):
         new_state = inner_step(state, batch)
-        curr_alpha = jax.grad(loss_fn, argnums=0)(new_state.w_params, state.h_params, state, val_batch)
+        curr_alpha = jax.grad(loss_fn, argnums=0, has_aux=True)(new_state.w_params,
+                                                                state.h_params, state, val_batch)[0]
         g_so = jax.tree_util.tree_map(lambda x, y: x * gamma ** (T - 1 - step) + y,
                                       B_jvp(state.w_params, state.h_params, batch,
                                             state, curr_alpha),
@@ -105,7 +107,8 @@ def luketina_so_grad(state: BiLevelTrainState, batches, val_batch):
     for step, batch in enumerate(batches):
         new_state = inner_step(state, batch)
         if step == len(batches) - 1:
-            curr_alpha = jax.grad(loss_fn, argnums=0)(new_state.w_params, state.h_params, state, val_batch)
+            curr_alpha = jax.grad(loss_fn, argnums=0, has_aux=True)(new_state.w_params,
+                                                                    state.h_params, state, val_batch)[0]
             g_so = B_jvp(state.w_params, state.h_params, batch, state, curr_alpha)
         state = new_state
     return state, g_so
@@ -115,7 +118,7 @@ def IFT_grad(state: BiLevelTrainState, batches, val_batch, N):
     """N + 1 - the number of terms from Neuman series. See (9) from i-DARTS; the number of online opt. steps"""
     for step, batch in enumerate(batches):
         state = inner_step(state, batch)
-    v = jax.grad(loss_fn, argnums=0)(state.w_params, state.h_params, state, val_batch)
+    v = jax.grad(loss_fn, argnums=0, has_aux=True)(state.w_params, state.h_params, state, val_batch)[0]
     so_grad = B_jvp(state.w_params, state.h_params, batches[-1], state, v)
     for k in range(1, N + 1):
         v = A_jvp(state.w_params, batches[-1], state, v)
