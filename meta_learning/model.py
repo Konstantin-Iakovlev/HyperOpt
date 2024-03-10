@@ -11,19 +11,19 @@ class CNN(hk.Module):
         self.flatten = hk.Flatten()
         self.linear = hk.Linear(num_cls)
 
-    def __call__(self, x_batch):#, is_training=False):
+    def __call__(self, x_batch, is_training=True):
         x = self.conv1(x_batch)
-        # x = hk.BatchNorm(False, False, 0.9)(x, is_training)
+        x = hk.BatchNorm(False, False, 0.9)(x, is_training)
         x = jax.nn.relu(x)
         x = hk.avg_pool(x, window_shape=(2, 2), strides=(2, 2), padding='VALID')
         
         x = self.conv2(x)
-        # x = hk.BatchNorm(False, False, 0.9)(x, is_training)
+        x = hk.BatchNorm(False, False, 0.9)(x, is_training)
         x = jax.nn.relu(x)
         x = hk.avg_pool(x, window_shape=(2, 2), strides=(2, 2), padding='VALID')
 
         x = self.conv3(x)
-        # x = hk.BatchNorm(False, False, 0.9)(x, is_training)
+        x = hk.BatchNorm(False, False, 0.9)(x, is_training)
         x = jax.nn.relu(x)
         x = hk.avg_pool(x, window_shape=(2, 2), strides=(2, 2), padding='VALID')
         
