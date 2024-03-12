@@ -74,7 +74,7 @@ def create_bilevel_train_state(module, rng, learning_rate, outer_lr, momentum=0.
         lambda m, n, p: 'linear' in m, params)
     tx_inner = optax.chain(optax.add_decayed_weights(weight_decay),
                            optax.sgd(learning_rate, momentum=momentum))
-    tx_outer = optax.adam(outer_lr)
+    tx_outer = optax.sgd(outer_lr, momentum=momentum)
     return BiLevelTrainState.create(
         apply_fn=module.apply, w_params=w_params, h_params=h_params,
         inner_opt=tx_inner, outer_opt=tx_outer, bn_state=bn_state,
