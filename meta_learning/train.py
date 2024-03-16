@@ -70,8 +70,6 @@ def main():
     for outer_step in tqdm(range(args.meta_batch_size * args.outer_steps)):
         params, _ = conv_net.init(jax.random.PRNGKey(seed), jnp.ones([1, 32, 32, 3]), True)
         w_params, _ = hk.data_structures.partition(lambda m, n, p: 'logits' in m, params)
-        print(w_params)
-        print(state.h_params.keys())
         inn_state = state.inner_opt.init(w_params)
         state = state.replace(w_params=w_params, inner_opt_state=inn_state)
         
