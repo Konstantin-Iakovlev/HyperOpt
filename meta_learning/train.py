@@ -3,6 +3,7 @@ import jax
 import jax.numpy as jnp
 import haiku as hk
 from model import CNN
+from haiku.nets import *
 from train_state import create_bilevel_train_state
 from dataset import prepare_datasets, DataGenerator
 import numpy as np
@@ -32,9 +33,9 @@ def parse_method(method: str):
 
 
 def main():
-    # TODO: Luketina
     parser = ArgumentParser()
     parser.add_argument('--seed', type=int, required=True, default=0)
+    parser.add_argument('--backbone', type=str, required=False, default='CNN')
     parser.add_argument('--train_classes', type=int, required=False, default=50)
     parser.add_argument('--val_classes', type=int, required=False, default=50)
     parser.add_argument('--num_ways', type=int, required=True, default=5)
@@ -52,7 +53,7 @@ def main():
                               'train_accuracy': [],
                               'test_loss': [],
                               'test_accuracy': []} for seed in [args.seed]}
-    conv_net = hk.transform_with_state(lambda x, t: CNN(num_cls=args.num_ways)(x, t))
+    conv_net = hk.transform_with_state(lambda x, t: eval(args.backbone)(num_classes=args.num_ways)(x, t))
 
     seed = args.seed
     np.random.seed(seed)
@@ -68,7 +69,9 @@ def main():
     meta_grad = jax.tree_util.tree_map(jnp.zeros_like, state.h_params)
     for outer_step in tqdm(range(args.meta_batch_size * args.outer_steps)):
         params, _ = conv_net.init(jax.random.PRNGKey(seed), jnp.ones([1, 32, 32, 3]), True)
-        w_params, _ = hk.data_structures.partition(lambda m, n, p: 'linear' in m, params)
+        w_params, _ = hk.data_structures.partition(lambda m, n, p: 'logits' in m, params)
+        print(w_params)
+        print(state.h_params.keys())
         inn_state = state.inner_opt.init(w_params)
         state = state.replace(w_params=w_params, inner_opt_state=inn_state)
         
@@ -102,7 +105,7 @@ def main():
         if outer_step % (args.val_freq * args.meta_batch_size) == 0 and outer_step > 0:
             for _ in range(100):
                 params, _ = conv_net.init(jax.random.PRNGKey(seed), jnp.ones([1, 32, 32, 3]), True)
-                w_params, _ = hk.data_structures.partition(lambda m, n, p: 'linear' in m, params)
+                w_params, _ = hk.data_structures.partition(lambda m, n, p: 'logits' in m, params)
                 inn_state = state.inner_opt.init(w_params)
                 state = state.replace(w_params=w_params, inner_opt_state=inn_state)
 

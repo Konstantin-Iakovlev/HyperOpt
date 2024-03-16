@@ -9,6 +9,7 @@ method=luketina
 for seed in 0 1 2 3 4
 do
     python train.py --seed ${seed} \
+    --backbone CNN \
     --method ${method} \
     --num_ways 5 --num_shots 10 \
     --train_classes 50 \
