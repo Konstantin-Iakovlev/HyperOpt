@@ -77,9 +77,8 @@ def proposed_so_grad(state, batches, val_batch, gamma):
     for step, batch in enumerate(batches):
         new_state = inner_step(state, batch)
         curr_alpha = loss_fn_grad_params(new_state.params, state, val_batch)
-        if step == len(batches) - 1:
-            g_so_arr.append(B_jvp(state.params, batch, state,
-                            curr_alpha) * gamma ** (T - 1 - step))
+        g_so_arr.append(B_jvp(state.params, batch, state,
+                        curr_alpha) * gamma ** (T - 1 - step))
         state = new_state
     return state, g_so_arr
 
