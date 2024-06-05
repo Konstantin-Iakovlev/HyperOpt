@@ -9,7 +9,7 @@ class CNN(hk.Module):
         self.conv2 = hk.Conv2D(output_channels=32, kernel_shape=(3,3))
         self.conv3 = hk.Conv2D(output_channels=32, kernel_shape=(3,3))
         self.flatten = hk.Flatten()
-        self.logits = hk.Linear(num_classes)
+        self.logits = hk.Linear(num_classes, name='logits')
 
     def __call__(self, x_batch, is_training=True):
         x = self.conv1(x_batch)
