@@ -26,10 +26,17 @@
 \usepackage{multicol}% many columns in slide
 \usepackage{hyperref}% urls
 \usepackage{hhline}%tables
+\usepackage{booktabs}
+% \usepackage{biblatex}
+
 
 
 \def\bw{\mathbf{w}}
 \def\balpha{\boldsymbol{\alpha}}
+\def\ltrn{\mathcal{L}_{\mathrm{train}}}
+\def\lval{\mathcal{L}_{\mathrm{val}}}
+\newcommand{\vect}[1]{\boldsymbol{\mathbf{#1}}}
+
 
 \definecolor{dark_green}{rgb}{0, 0.788, 0}
 \definecolor{dark_red}{rgb}{0.9, 0, 0}
@@ -42,11 +49,16 @@
 \definecolor{bleudefrance}{rgb}{0.19, 0.55, 0.91}
 
 %----------------------------------------------------------------------------------------------------------
-\title[\hbox to 56mm{Feature generation}]{Поиск согласованных нейросетевых моделей в задаче мультидоменного обучения}
-\author{К.\,Д.~Яковлев\inst{1} \and \and О.\,Ю.~Бахтеев\inst{1,2}\and В.\,В.~Стрижов\inst{1,2} \\
-\tt{\footnotesize \{iakovlev.kd, bakhteev, strijov\}@phystech.edu }}
-\institute{\inst{1} Москва, Московский физико-технический институт \and
-\inst{2} Москва, Вычислительный центр им. А.А. Дородницына ФИЦ ИУ РАН} \date{2023}
+% \title[\hbox to 56mm{Feature generation}]{Поиск согласованных нейросетевых моделей в задаче мультидоменного обучения}
+\title[\hbox to 56mm{Feature generation}]{Обобщенная жадная градиентная оптимизация гиперпараметров}
+% \author{К.\,Д.~Яковлев\inst{1} \and \and О.\,Ю.~Бахтеев\inst{1,2}\and В.\,В.~Стрижов\inst{1,2} \\
+% \tt{\footnotesize \{iakovlev.kd, bakhteev, strijov\}@phystech.edu }}
+% \institute{\inst{1} Москва, Московский физико-технический институт \and
+% \inst{2} Москва, Вычислительный центр им. А.А. Дородницына ФИЦ ИУ РАН} \date{2023}
+\author{К.\,Д.~Яковлев\inst{} \\
+\tt{\footnotesize iakovlev.kd@phystech.edu }}
+\institute{\inst{} Москва, Московский физико-технический институт \\
+\textbf{Научный руководитель}: к.ф.-м.н. Бахтеев Олег Юрьевич} \date{2024}
 %----------------------------------------------------------------------------------------------------------
 \begin{document}
 %----------------------------------------------------------------------------------------------------------
@@ -64,29 +76,30 @@
 
 ~\\
 \begin{block}{Проблема}
-  Существующие методы не гарантируют выполнение следующих условий одновременно: 1) онлайн оптимизация,
+  Существующие методы не гарантируют выполнения следующих условий одновременно: 1) отсутствие требований на сходимость
+  внутренней процедуры оптимизации к единственному решению,
   2) отсутствие смещения из-за короткого горизонта, 3) линейная сложность итерации и затраты памяти.
 \end{block}
 ~\\
 \begin{block}{Метод решения}
-  Предлагаемый метод основан на аггрегации жадных гиперградиентов без дополнительных вычислительных затрат.
+  Предлагаемый метод основан на агрегации жадных гиперградиентов без дополнительных вычислительных затрат.
 \end{block}
 
 \end{frame}
 
 
-\begin{frame}{Аггрегация жадных гиперградиентов}
+\begin{frame}{Агрегация жадных гиперградиентов}
   Пусть задано $\gamma \in (0, 1)$. Тогда аппроксимация гиперградиента запишется как:
   \begin{align*}
-    \hat{\nabla}_{\boldsymbol{\alpha}} = \frac{\partial}{\partial \boldsymbol{\alpha}}\mathcal{L}_2(\mathbf{w}_T(\boldsymbol{\alpha}), \boldsymbol{\alpha}) +
+    \hat{d}_{\boldsymbol{\alpha}}\lval(\vect{w}_T, \vect{\alpha}; \gamma) = \frac{\partial}{\partial \boldsymbol{\alpha}}\mathcal{L}_2(\mathbf{w}_T(\boldsymbol{\alpha}), \boldsymbol{\alpha}) +
     \sum_{t=1}^T \mathbf{B}_t\frac{\partial\mathcal{L}_2(\mathbf{w}_t, \boldsymbol{\alpha})}{\partial \mathbf{w}_t}\gamma^{T-t}.
   \end{align*}
   \begin{table}
-    \begin{tabular}{c|c|c|c|c|c}
-       & IFT & RMAD & DrMAD & TruncBP & Proposed \\
+    \begin{tabular}{c|c|c|c|c|c} \toprule
+       & IFT & RMD & DrMAD & $T1-T2$ & Ours \\ \midrule
       Онлайн оптимизация & \color{dark_red}{\texttimes} & \color{dark_green}{\checkmark} & \color{dark_red}{\texttimes} & \color{dark_green}{\checkmark} & \color{dark_green}{\checkmark} \\
       Длинный горизонт & \color{dark_green}{\checkmark} & \color{dark_green}{\checkmark} & \color{dark_green}{\checkmark} & \color{dark_red}{\texttimes} & \color{dark_green}{\checkmark} \\
-      линейная сложность & \color{dark_green}{\checkmark} & \color{dark_red}{\texttimes} & \color{dark_green}{\checkmark} & \color{dark_green}{\checkmark} & \color{dark_green}{\checkmark} \\
+      Линейная сложность & \color{dark_green}{\checkmark} & \color{dark_red}{\texttimes} & \color{dark_green}{\checkmark} & \color{dark_green}{\checkmark} & \color{dark_green}{\checkmark} \\ \bottomrule
       
     \end{tabular}
   \end{table}
@@ -124,7 +137,7 @@
 \begin{frame}{Постановка задачи оптимизации гиперпараметров}
 \begin{itemize}
   \item Пусть задан вектор параметров модели $\mathbf{w} \in \mathbb{R}^p$ и вектор гиперпараметров
-  $\boldsymbol{\alpha} \in \mathbb{R}^h$. задача оптимизации:
+  $\boldsymbol{\alpha} \in \mathbb{R}^h$. Задача оптимизации:
   \begin{align*}
     \boldsymbol{\alpha}^* &= \arg\min_{\boldsymbol{\alpha}}\mathcal{L}_2(\mathbf{w}^*, \boldsymbol{\alpha}), \\
     \mathrm{s.t.} \quad \mathbf{w}^* &= \arg\min_{\mathbf{w}}\mathcal{L}_1(\mathbf{w}, \boldsymbol{\alpha}).
@@ -136,7 +149,7 @@
   \end{align*}
   \item Гиперградиент запишется как:
   \begin{align*}
-    &\nabla_{\boldsymbol{\alpha}}\mathcal{L}_2(\mathbf{w}_T(\boldsymbol{\alpha}), \boldsymbol{\alpha}) = 
+    &d_{\boldsymbol{\alpha}}\mathcal{L}_2(\mathbf{w}_T(\boldsymbol{\alpha}), \boldsymbol{\alpha}) = 
     \frac{\partial}{\partial \boldsymbol{\alpha}}\mathcal{L}_2(\mathbf{w}_T(\boldsymbol{\alpha}), \boldsymbol{\alpha}) + 
     \sum_{t=1}^T\mathbf{B}_t\mathbf{A}_{t+1}\ldots\mathbf{A}_T
     \frac{\partial \mathcal{L}_2(\mathbf{w}_T(\boldsymbol{\alpha}), \boldsymbol{\alpha})}{\partial\mathbf{w}}, \\
@@ -148,75 +161,106 @@
 
 
 \begin{frame}{Аппроксимация гиперградиента}
-  \begin{itemize}
-    \item Пусть задано $\gamma \in (0, 1)$. Тогда аппроксимация гиперградиента запишется как:
+  Пусть задано $\gamma \in (0, 1)$. Тогда аппроксимация гиперградиента запишется как:
   \begin{align*}
-    \hat{\nabla}_{\boldsymbol{\alpha}} = \frac{\partial}{\partial \boldsymbol{\alpha}}\mathcal{L}_2(\mathbf{w}_T(\boldsymbol{\alpha}), \boldsymbol{\alpha}) +
+    \hat{d}_{\boldsymbol{\alpha}}\lval(\vect{w}_T, \vect{\alpha}; \gamma) = \frac{\partial}{\partial \boldsymbol{\alpha}}\mathcal{L}_2(\mathbf{w}_T(\boldsymbol{\alpha}), \boldsymbol{\alpha}) +
     \sum_{t=1}^T \mathbf{B}_t\frac{\partial\mathcal{L}_2(\mathbf{w}_t, \boldsymbol{\alpha})}{\partial \mathbf{w}_t}\gamma^{T-t}.
   \end{align*}
-  \item предлположения:
-  \begin{enumerate}
-    \item $\mathcal{L}_1(., \boldsymbol{\alpha})$, $\mathcal{L}_2(., \boldsymbol{\alpha})$ являются $L$-гладкими 
-    и $\mu$-сильно выпуклыми.
-    \item $\frac{\partial^2\mathcal{L}_1(., \boldsymbol{\alpha})}{\partial\mathbf{w}\partial\mathbf{w}^\top}$ является $H_w$-липшицева.
-    \item $1 - \eta L \leq \gamma 1 - \eta\mu$
-    \item $\|\frac{\partial\mathcal{L}_1(\mathbf{w}, \boldsymbol{\alpha})}{\partial\boldsymbol{\alpha}\partial\mathbf{w}^\top}\| \leq B$.
-    \item $\frac{\partial^2\mathcal{L}_1(., \boldsymbol{\alpha})}{\partial\boldsymbol{\alpha}\partial\mathbf{w}^\top}$ является $M_b$-липшицевой.
-    \item $(\frac{\partial^2\mathcal{L}_1(., \boldsymbol{\alpha})}{\partial\boldsymbol{\alpha}\partial\mathbf{w}^\top})^\top
-    (\frac{\partial^2\mathcal{L}_1(., \boldsymbol{\alpha})}{\partial\boldsymbol{\alpha}\partial\mathbf{w}^\top}) \succeq \kappa \mathbf{I}$.
-  \end{enumerate}
-  \end{itemize}
+  \begin{block}{Теорема (Яковлев, 2024)}
+    Пусть $\hat{d}_{\vect{\alpha}}(\vect{w}_T, \vect{\alpha}; \gamma)$ -- предложенная аппроксимация гиперградиента. Тогда имеет место следующий предел:
+    \begin{align}
+        \lim_{\gamma \to 0^+}\hat{d}_{\vect{\alpha}}(\vect{w}_T, \vect{\alpha}; \gamma) = \nabla_{\vect{\alpha}}\lval(\vect{w}_T, \vect{\alpha}) + \nabla_{\vect{w}_T}\lval(\vect{w}_T, \vect{\alpha})\vect{B}_T.
+    \end{align}
+    Таким образом, предложенный подход является обобщением $T1-T2$.
+  \end{block}
 \end{frame}
 
 
-\begin{frame}{Ассимптотическая несмещенность гиперградиента}
+\begin{frame}{Достаточное условие спуска}
+  \textbf{Предположения}
+  \begin{enumerate}
+    \item $\lval(., \vect{\alpha})$ является $L$-гладкой and $\mu$-сильно выпуклой для любого $\vect{\alpha}$.
+   \item $\frac{\partial\vect{\Phi}(., \vect{\alpha})}{\partial\vect{\alpha}}$ является $C_B$-Липшицевой для любого $\vect{\alpha}$.
+   \item $\|\frac{\partial\vect{\Phi}(\vect{w}, \vect{\alpha})}{\partial\vect{\alpha}}\| \leq B$ для любой пары $(\vect{w}, \vect{\alpha})$ для некоторого $B \geq 0$.
+   \item $\vect{w}$ принадлежит некоторому выпуклому множеству с диаметром $D < \infty$.
+   \item $\vect{\Phi}(\vect{w}, \vect{\alpha}) = \vect{w} - \eta\nabla_{\vect{w}}\ltrn(\vect{w}, \vect{\alpha})$ для некоторого $\eta \geq 0$.
+   \item $\nabla^2_{\vect{w}}\ltrn(., \vect{\alpha}) = \vect{I}$ \, для любого $\vect{\alpha}$, а также $\nabla_{\vect{\alpha}}\lval(\vect{w}, \vect{\alpha}) = \vect{0}$ \, для любого $\vect{w}$.
+   \item $\vect{B}_t\vect{B}_t^\top \succeq \kappa \vect{I}$ \, для некоторого $\kappa > 0$. 
+   \item Определим $\vect{w}_{\infty} := \arg\min_{\vect{w}}\ltrn(\vect{w}, \vect{\alpha})$, $\vect{w}^*_2 := \arg\min_{\vect{w}}\lval(\vect{w}, \vect{\alpha})$. Пусть $\|\vect{w}_{\infty} - \vect{w}_2^*\| \geq 2De^{-\mu\eta T} + \delta$, для некоторого $\delta > 0$. 
+\end{enumerate}
 
-  \begin{block}{Теорема (Яковлев, 2023)}
-    Пусть выполнены предположения (1-6). Тогда:
-    \begin{align*}
-     &\|\hat{\nabla}_{\boldsymbol{\alpha}} - \nabla_{\boldsymbol{\alpha}}\|_2 \leq \frac{2LB\|\mathbf{w}_0 - \mathbf{w}_*\|\sqrt{1 - \eta\mu}^T}{\sqrt{1 - \eta\mu}^{-1} - 1} +
-     B\|\frac{\partial\mathcal{L}_2(\mathbf{w}_T, \boldsymbol{\alpha})}{\partial\mathbf{w}}\| \cdot \\
-     &\left[
-      \frac{1}{\eta}(\frac{1}{\mu} - \frac{1}{L} + \frac{1}{L}(1 - \eta\mu)^T) + 2\eta H_w((T - 1)\sqrt{1 - \eta\mu}^T- 
-      \frac{\sqrt{1 - \eta\mu}^{T-1} - (1 - \eta\mu)^T}{\sqrt{1 - \eta\mu}^{-1} - 1})
-     \right].
-    \end{align*}
-  \end{block}
-
-  \begin{block}{Теорема (Яковлев, 2023)}
-    Пусть $\mathcal{L}_2 = \mathcal{L}_2(\bw)$. Тогда найдется $c > 0$:
-    \begin{align*}
-      \hat{\nabla}_{\boldsymbol{\alpha}}^\top\nabla_{\boldsymbol{\alpha}} \geq c\|\nabla_{\bw}\mathcal{L}_2(\bw_T, \boldsymbol{\alpha})\|_2^2.
-    \end{align*}
-    То есть, выполнено достаточное условие спуска.
-  \end{block}
+  \begin{block}{Теорема (Яковлев, 2024)}
+  Пусть $\gamma = 1 - \eta \in (0, 1)$. Пусть также выполнены предположения (1-8), тогда найдется достаточно большое $T$ и универсальная константа $c > 0$ такая, что:
+  \begin{align*}
+      d_{\vect{\alpha}}\lval(\vect{w}_T, \vect{\alpha}) \hat{d}_{\vect{\alpha}}\lval(\vect{w}_T, \vect{\alpha}; \gamma)^\top \geq c \|d_{\vect{\alpha}}\lval(\vect{w}_T, \vect{\alpha})\|_2^2.
+  \end{align*}
+\end{block}
   
 \end{frame}
 
 
 
+% \begin{frame}{Постановка вычислительного эксперимента 1}
+%   \begin{itemize}
+%     \item Цель -- сравнение качества предложенного подхода с существующими методами подсчета гиперградиента.
+%     \item Эксперимент проводится на задаче очистки обучающей выборки. Приводится точность предсказания на отложенной выборке.
+%     \item Сравниваются следующие методы: DrMAD, IFT, Greedy.
+%   \end{itemize}
+
+
+%   \begin{minipage}{0.5\textwidth}
+%   \begin{table}[h]
+%     \centering
+%     \begin{tabular}{c|c|c|c} \toprule
+%       \textbf{Method}/ \textbf{Noise} & 0.3 & 0.5 & 0.7 \\ \midrule
+%       Naive & 28.94 & 25.17 & 19.23 \\
+%       IFT(2) & 28.97 & 25.81 & 20.89 \\
+%       Greedy & 30.36 & 26.76 & 21.38 \\
+%       Ours ($\gamma=0.99$) & \textbf{30.39} & \textbf{26.77} & \textbf{21.47} \\ \bottomrule
+%         % \textbf{Method} & \textbf{Valid. Acc.} & $\#$\textbf{JVPs} \\ \hline
+%         % Truncated backpropagation (Lukethina) & 72.5 & $1 \; (1)$ \\
+%         % DrMAD & 69.8 & $99 \; (2T - 1)$ \\
+%         % IFT(9, 5) & 70.3 & $50 \;  ((N + 1)K)$ \\
+%         % IFT(4, 10) & 70.7 & $50 \; ((N + 1)K)$ \\
+%         % Proposed ($\gamma = 0.99$) & $\textbf{73.5}^*$ & $50 \; (T)$ \\ \hline
+%     \end{tabular}
+%   \end{table}
+%   \end{minipage}\hfil
+%   \begin{minipage}{0.5\textwidth}
+%     \begin{align*}
+%       \boldsymbol{\alpha}^* &= \arg\min_{\boldsymbol{\alpha}}\mathcal{L}_\text{val}(\boldsymbol{w}^*), \\
+%       \mathrm{s.t.} \quad \mathbf{w}^* &= \arg\min_{\mathbf{w}}\sum_{i=1}^N\sigma(\alpha_i)\ell_i(\mathbf{w}).
+%     \end{align*}
+%   \end{minipage}
+
+% Из таблицы видно, что предложенный метод превосходит существующие методы оптимизации гиперпараметров в терминах 
+% точности предсказаний на отложенной выборке, имея сопоставимые вычислительные затраты.
+% \end{frame}
+
+
 \begin{frame}{Постановка вычислительного эксперимента}
   \begin{itemize}
     \item Цель -- сравнение качества предложенного подхода с существующими методами подсчета гиперградиента.
-    \item Эксперимент проводится на задаче очистки обучающей выборки. Приводится точность предсказания на отложенной выборке.
-    \item Сравниваются следующие методы: DrMAD, IFT, Truncated Backpropagation.
+    \item Эксперимент проводится на задаче мета-обучения. Приводится точность предсказаний на мета-контроле,
+    а также вычислительная сложность итерации подсчета гиперградиента.
+    \item Сравниваются следующие методы: FO, IFT, $T1-T2$.
   \end{itemize}
-
-  \begin{table}[h]
+  \begin{table}
     \centering
-    \begin{tabular}{c|c|c}
-        \textbf{Method} & \textbf{Valid. Acc.} & $\#$\textbf{JVPs} \\ \hline
-        Truncated backpropagation (Lukethina) & 72.5 & $1 \; (1)$ \\
-        DrMAD & 69.8 & $99 \; (2T - 1)$ \\
-        IFT(9, 5) & 70.3 & $50 \;  ((N + 1)K)$ \\
-        IFT(4, 10) & 70.7 & $50 \; ((N + 1)K)$ \\
-        Proposed ($\gamma = 0.99$) & $\textbf{73.5}^*$ & $50 \; (T)$ \\ \hline
+    \begin{tabular}{c|c|ccc}
+    \toprule
+    \textbf{Method} & \textbf{\#JVPs} & \textbf{3-way, 10-shot} & \textbf{4-way, 10-shot} & \textbf{5-way, 10-shot} \\ \midrule
+    FO & 0 & 43.48 $\pm$ 0.69 & 34.15 $\pm$ 0.53 & 28.59 $\pm$ 0.47 \\
+    $T1-T2$ & 1 & 42.96 $\pm$ 0.79 & 33.95 $\pm$ 0.64 & 27.59 $\pm$ 0.46 \\
+    IFT & 11 & 40.14 $\pm$ 0.73 & 33.23 $\pm$ 0.41 & 27.20 $\pm$ 0.52 \\
+    Ours ($\gamma = 0.99$) & 10 & \textbf{46.10} $\pm$ \textbf{0.82} & \textbf{36.94} $\pm$ \textbf{1.07} & \textbf{29.79} $\pm$ \textbf{0.62} \\ \bottomrule
     \end{tabular}
 \end{table}
-Из таблицы видно, что предложенный метод превосходит существующие методы оптимизации гиперпараметров в терминах 
-точности предсказаний на отложенной выборке, имея сопоставимые вычислительные затраты.
-\end{frame}
 
+Из таблицы видно, что предложенный метод превосходит существующие методы градиентной оптимизации гиперпараметров в терминах 
+точности предсказаний на мета-контроле, имея сопоставимые вычислительные затраты.
+  
+\end{frame}
 
 
 
@@ -291,7 +335,7 @@
 
 
 
-\begin{frame}{Заключение}
+\begin{frame}{Выносится на защиту}
     % \begin{itemize}
     % \item Рассмотрена задача поиска архитектуры модели глубокого
     % обучения на мультидоменных данных. Задача рассматривалась как
@@ -307,10 +351,24 @@
     \begin{itemize}
       \item Рассмотрена задача оптимизации гиперпараметров.
       \item Предложен метод оптимизации гиперпараметров, удовлетворяющий одновременно трем условиям:
-      1) онлайн оптимизация, 2) отсутствие смещения из-за короткого горизонта, 3) линейная сложность итерации и затраты памяти.
+      \begin{itemize}
+        \item онлайн оптимизация
+        \item отсутствие смещения из-за короткого горизонта
+        \item линейная сложность итерации и затраты памяти.
+      \end{itemize}
       \item Продемонстрирована работоспособность предлагаемого решения.
+      \item Проведен теоретический анализ предложенного метода.
     \end{itemize}
 \end{frame}
+
+
+% \begin{frame}{Список публикаций}
+%   \begin{itemize}
+%     \item \textbf{(core-A*)} Yakovlev K. et al. GEC-DePenD: Non-Autoregressive Grammatical Error Correction with Decoupled Permutation and Decoding //Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers). – 2023. – С. 1546-1558.
+%     \item \textbf{(core-A*)} Yakovlev K. et al. Sinkhorn Transformations for Single-Query Postprocessing in Text-Video Retrieval //Proceedings of the 46th International ACM SIGIR Conference on Research and Development in Information Retrieval. – 2023. – С. 2394-2398.
+%     \item Yakovlev K. D. et al. Neural Architecture Search with Structure Complexity Control //International Conference on Analysis of Images, Social Networks and Texts. – Cham : Springer International Publishing, 2021. – С. 207-219.
+%   \end{itemize}
+% \end{frame}
 
 %----------------------------------------------------------------------------------------------------------
 \end{document} 
