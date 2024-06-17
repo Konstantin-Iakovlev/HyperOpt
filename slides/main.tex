@@ -20,6 +20,10 @@
 \usepackage{amssymb,amsfonts,amsmath,mathtext}
 %\usepackage{subfig}
 \usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+\usetikzlibrary{quotes}
+\usepackage{tikzscale}
+\usepackage{scalefnt}
 \usepackage{xcolor}
 \usepackage[all]{xy} % xy package for diagrams
 \usepackage{array}
@@ -91,8 +95,7 @@
 \begin{frame}{Агрегация жадных гиперградиентов}
   Пусть задано $\gamma \in (0, 1)$. Тогда аппроксимация гиперградиента запишется как:
   \begin{align*}
-    \hat{d}_{\boldsymbol{\alpha}}\lval(\vect{w}_T, \vect{\alpha}; \gamma) = \frac{\partial}{\partial \boldsymbol{\alpha}}\mathcal{L}_2(\mathbf{w}_T(\boldsymbol{\alpha}), \boldsymbol{\alpha}) +
-    \sum_{t=1}^T \mathbf{B}_t\frac{\partial\mathcal{L}_2(\mathbf{w}_t, \boldsymbol{\alpha})}{\partial \mathbf{w}_t}\gamma^{T-t}.
+    \hat{d}_{\vect{\alpha}}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha}; \gamma) = \nabla_{\vect{\alpha}}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha}) + \sum_{t=1}^T\gamma^{T-t}\nabla_{\vect{w}_t}\mathcal{L}_\text{val}(\vect{w}_t, \vect{\alpha})\vect{B}_t.
   \end{align*}
   \begin{table}
     \begin{tabular}{c|c|c|c|c|c} \toprule
@@ -109,31 +112,6 @@
 %----------------------------------------------------------------------------------------------------------
 
 
-% \begin{frame}{Основная литература}
-% \begin{thebibliography}{1}
-
-
-% \bibitem{darts} 
-% Hanxiao Liu and Karen Simonyan and Yiming Yang. 
-% \textit{DARTS: Differentiable Architecture Search}.
-% CoRR, 2018.
-
-
-% \bibitem{wang2021multi}
-% Wang, Q., Ke, J., Greaves, J., Chu, G.,
-% Bender, G., Sbaiz, L., Go, A., Howard, A., Yang, M.,
-% Gilbert, J. \& Others
-% \textit{Multi-path neural networks for on-device multi-domain visual classification}.
-% CoRR, 2021.
-
-% \bibitem{darts-cc}
-% Yakovlev, K., Grebenkova, O., Bakhteev, O. \& Strijov, V.
-% \textit{Neural Architecture Search with Structure Complexity Control}.
-% CoRR, 2022.
-
-% \end{thebibliography}	
-% \end{frame}
-
 \begin{frame}{Постановка задачи оптимизации гиперпараметров}
 \begin{itemize}
   \item Пусть задан вектор параметров модели $\mathbf{w} \in \mathbb{R}^p$ и вектор гиперпараметров
@@ -149,13 +127,9 @@
   \end{align*}
   \item Гиперградиент запишется как:
   \begin{align*}
-    &d_{\boldsymbol{\alpha}}\mathcal{L}_2(\mathbf{w}_T(\boldsymbol{\alpha}), \boldsymbol{\alpha}) = 
-    \frac{\partial}{\partial \boldsymbol{\alpha}}\mathcal{L}_2(\mathbf{w}_T(\boldsymbol{\alpha}), \boldsymbol{\alpha}) + 
-    \sum_{t=1}^T\mathbf{B}_t\mathbf{A}_{t+1}\ldots\mathbf{A}_T
-    \frac{\partial \mathcal{L}_2(\mathbf{w}_T(\boldsymbol{\alpha}), \boldsymbol{\alpha})}{\partial\mathbf{w}}, \\
-    &\mathbf{B}_t = \frac{\partial\mathbf{\Phi}(\mathbf{w}_{t-1}, \boldsymbol{\alpha})}{\partial\boldsymbol{\alpha}},
-    \quad \mathbf{A}_t = \frac{\partial\mathbf{\Phi}(\mathbf{w}_{t-1}, \boldsymbol{\alpha})}{\partial\boldsymbol{w}_{t - 1}}.
-  \end{align*}
+    &d_{\vect{\alpha}}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha}) = \nabla_{\vect{\alpha}}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha}) + \sum_{t=1}^T \nabla_{\vect{w}_T}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha})\left(\prod_{k=t+1}^T\vect{A}_k\right)\vect{B}_t, \\
+    &\vect{A}_k = \frac{\partial\vect{\Phi}(\vect{w}_{k-1}, \vect{\alpha})}{\partial\vect{w}_{k-1}}, \quad \vect{B}_t = \frac{\partial\vect{\Phi}(\vect{w}_{t-1}, \vect{\alpha})}{\partial\vect{\alpha}}.
+\end{align*}
 \end{itemize}
 \end{frame}
 
@@ -163,16 +137,62 @@
 \begin{frame}{Аппроксимация гиперградиента}
   Пусть задано $\gamma \in (0, 1)$. Тогда аппроксимация гиперградиента запишется как:
   \begin{align*}
-    \hat{d}_{\boldsymbol{\alpha}}\lval(\vect{w}_T, \vect{\alpha}; \gamma) = \frac{\partial}{\partial \boldsymbol{\alpha}}\mathcal{L}_2(\mathbf{w}_T(\boldsymbol{\alpha}), \boldsymbol{\alpha}) +
-    \sum_{t=1}^T \mathbf{B}_t\frac{\partial\mathcal{L}_2(\mathbf{w}_t, \boldsymbol{\alpha})}{\partial \mathbf{w}_t}\gamma^{T-t}.
+    \hat{d}_{\vect{\alpha}}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha}; \gamma) = \nabla_{\vect{\alpha}}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha}) + \sum_{t=1}^T\gamma^{T-t}\nabla_{\vect{w}_t}\mathcal{L}_\text{val}(\vect{w}_t, \vect{\alpha})\vect{B}_t.
   \end{align*}
+  \begin{figure}
+  \scalebox{0.9}{
+  \begin{tikzpicture}
+    %detailed
+    \node at (0,0) [rectangle,draw] (gtm1) {$\nabla_{\vect{w}_{t-1}}\ltrn(\vect{w}_{t-1}, \vect{\alpha})$};
+    \node at (0, -2) [circle,draw] (wtm1) {$\vect{w}_{t-1}$};
+    \draw [-{Stealth[scale=2]}] (wtm1) to (gtm1);
+    \node at (3,0) [circle,draw,minimum size = 0pt, inner sep=0pt,label=90:$-\eta$] (m1) {$\times$};
+    \draw [-{Stealth[scale=2]}] (gtm1) to (m1);
+    \node at (3,-2) [circle,draw,minimum size = 0pt, inner sep=0pt,] (p1) {$+$};
+    \draw [-{Stealth[scale=2]}] (m1) to (p1);
+    \draw [-{Stealth[scale=2]}] (wtm1) to (p1);
+    \node at (6, -2) [circle,draw] (wt) {$\vect{w}_{t}$};
+    \draw [-{Stealth[scale=2]}] (p1) to (wt);
+    \node at (3,-4) [rectangle,draw] (h1) {$\gamma^{T-t}\nabla_{\vect{w}_{t}}\lval(\vect{w}_t, \vect{\alpha})\vect{B}_t$};
+    \draw [-{Stealth[scale=2]},dashed] (p1) to (h1);
+    \node at (6,0) [rectangle,draw] (gt) {$\nabla_{\vect{w}_{t}}\ltrn(\vect{w}_{t}, \vect{\alpha})$};
+    \node at (9,0) [circle,draw,minimum size = 0pt, inner sep=0pt,label=90:$-\eta$] (m2) {$\times$};
+    \node at (9,-2) [circle,draw,minimum size = 0pt, inner sep=0pt,] (p2) {$+$};
+    \node at (8,-4) [rectangle,draw] (h2) {$\gamma^{T-t-1}\nabla_{\vect{w}_{t+1}}\lval(\vect{w}_{t+1}, \vect{\alpha})\vect{B}_{t+1}$};
+    \draw [-{Stealth[scale=2]},dashed] (p2.south) to (p2.south|-h2.north);
+    \draw [-{Stealth[scale=2]},] (wt) to (gt);
+    \draw [-{Stealth[scale=2]},] (gt) to (m2);
+    \draw [-{Stealth[scale=2]},] (m2) to (p2);
+    \draw [-{Stealth[scale=2]},] (wt) to (p2);
+    %summ
+    \draw[draw=black,dashed] (11,-3) rectangle ++(-10.5, -2);
+    \node at (-2,-3.5) [circle,draw] (summ) {$\Sigma$};
+    \draw [-{Stealth[scale=2]},] (0.5,-3.5) -- (-1.6,-3.5);
+    \node at (-2, -4.7) [rectangle, draw] (hyp) {$d_{\vect{\alpha}}\lval(\vect{w}_T, \vect{\alpha};\gamma)$};
+    \draw [-{Stealth[scale=2]},] (summ) to (hyp);
+    %imaginar lines
+    \node at (-2, -2) [circle,] (aux) {};
+    \draw [-{Stealth[scale=2]},dashed] (aux) to (wtm1);
+\end{tikzpicture}
+}
+\end{figure}
+\end{frame}
+
+\begin{frame}{Обобщение метода $T1-T2$}
+  \begin{block}{Определение} Аппроксимация гиперградиента, определяемая методом $T1-T2$ запишется как:
+    \begin{align*}
+        \hat{d}_{\vect{\alpha}}^{T1-T2}\lval(\vect{w}_T, \vect{\alpha}) = \nabla_{\vect{\alpha}}\lval(\vect{w}_T, \vect{\alpha}) + \nabla_{\vect{w}_T}\lval(\vect{w}_T, \vect{\alpha})\vect{B}_T.
+    \end{align*}
+    
+  \end{block}
   \begin{block}{Теорема (Яковлев, 2024)}
     Пусть $\hat{d}_{\vect{\alpha}}(\vect{w}_T, \vect{\alpha}; \gamma)$ -- предложенная аппроксимация гиперградиента. Тогда имеет место следующий предел:
-    \begin{align}
+    \begin{align*}
         \lim_{\gamma \to 0^+}\hat{d}_{\vect{\alpha}}(\vect{w}_T, \vect{\alpha}; \gamma) = \nabla_{\vect{\alpha}}\lval(\vect{w}_T, \vect{\alpha}) + \nabla_{\vect{w}_T}\lval(\vect{w}_T, \vect{\alpha})\vect{B}_T.
-    \end{align}
+    \end{align*}
     Таким образом, предложенный подход является обобщением $T1-T2$.
   \end{block}
+  
 \end{frame}
 
 
@@ -199,51 +219,36 @@
 \end{frame}
 
 
-
-% \begin{frame}{Постановка вычислительного эксперимента 1}
-%   \begin{itemize}
-%     \item Цель -- сравнение качества предложенного подхода с существующими методами подсчета гиперградиента.
-%     \item Эксперимент проводится на задаче очистки обучающей выборки. Приводится точность предсказания на отложенной выборке.
-%     \item Сравниваются следующие методы: DrMAD, IFT, Greedy.
-%   \end{itemize}
-
-
-%   \begin{minipage}{0.5\textwidth}
-%   \begin{table}[h]
-%     \centering
-%     \begin{tabular}{c|c|c|c} \toprule
-%       \textbf{Method}/ \textbf{Noise} & 0.3 & 0.5 & 0.7 \\ \midrule
-%       Naive & 28.94 & 25.17 & 19.23 \\
-%       IFT(2) & 28.97 & 25.81 & 20.89 \\
-%       Greedy & 30.36 & 26.76 & 21.38 \\
-%       Ours ($\gamma=0.99$) & \textbf{30.39} & \textbf{26.77} & \textbf{21.47} \\ \bottomrule
-%         % \textbf{Method} & \textbf{Valid. Acc.} & $\#$\textbf{JVPs} \\ \hline
-%         % Truncated backpropagation (Lukethina) & 72.5 & $1 \; (1)$ \\
-%         % DrMAD & 69.8 & $99 \; (2T - 1)$ \\
-%         % IFT(9, 5) & 70.3 & $50 \;  ((N + 1)K)$ \\
-%         % IFT(4, 10) & 70.7 & $50 \; ((N + 1)K)$ \\
-%         % Proposed ($\gamma = 0.99$) & $\textbf{73.5}^*$ & $50 \; (T)$ \\ \hline
-%     \end{tabular}
-%   \end{table}
-%   \end{minipage}\hfil
-%   \begin{minipage}{0.5\textwidth}
-%     \begin{align*}
-%       \boldsymbol{\alpha}^* &= \arg\min_{\boldsymbol{\alpha}}\mathcal{L}_\text{val}(\boldsymbol{w}^*), \\
-%       \mathrm{s.t.} \quad \mathbf{w}^* &= \arg\min_{\mathbf{w}}\sum_{i=1}^N\sigma(\alpha_i)\ell_i(\mathbf{w}).
-%     \end{align*}
-%   \end{minipage}
-
-% Из таблицы видно, что предложенный метод превосходит существующие методы оптимизации гиперпараметров в терминах 
-% точности предсказаний на отложенной выборке, имея сопоставимые вычислительные затраты.
-% \end{frame}
-
-
 \begin{frame}{Постановка вычислительного эксперимента}
   \begin{itemize}
     \item Цель -- сравнение качества предложенного подхода с существующими методами подсчета гиперградиента.
-    \item Эксперимент проводится на задаче мета-обучения. Приводится точность предсказаний на мета-контроле,
+    \item Эксперимент проводится на задаче мета-обучения.
+    \begin{align*}
+      \vect{\alpha}^* &= \arg\min_{\vect{\alpha}}\mathbb{E}_{\mathcal{T}}\mathbb{E}_{\mathcal{S}|\mathcal{T}}\lval(\vect{w}^*, \vect{\alpha}; \mathcal{S}),\\
+      \mathrm{s.t.} \quad \vect{w}^* &= \arg\min_{\vect{w}}\ltrn(\vect{w}, \vect{\alpha};\mathcal{S}).
+    \end{align*}
+    \item В сравнении участвуют следующие базовые методы:
+  \end{itemize}
+  \begin{small}
+  \begin{align*}
+    \textbf{(FO)}: \quad &
+    \hat{d}_{\vect{\alpha}}^\text{FO}\lval(\vect{w}_T, \vect{\alpha}) = \nabla_{\vect{\alpha}}\lval(\vect{w}_T, \vect{\alpha}),\\
+    \textbf{(IFT)}: \quad &
+    \hat{d}_{\vect{\alpha}}^\text{IFT}\lval(\vect{w}_T, \vect{\alpha}) =
+    \nabla_{\vect{\alpha}}\lval - \nabla_{\vect{w}}\lval\left(\sum_{j\leq i}\left[\vect{I} - \nabla^2_{\vect{w},\vect{w}}\ltrn\right]^j\right)\nabla^2_{\vect{w},\vect{\alpha}}\ltrn\bigg\vert_{(\vect{w}_T, \vect{\alpha})},\\
+    \textbf{(T1-T2)}: \quad &\hat{d}_{\vect{\alpha}}^{T1-T2}\lval(\vect{w}_T, \vect{\alpha}) = \nabla_{\vect{\alpha}}\lval(\vect{w}_T, \vect{\alpha}) + \nabla_{\vect{w}_T}\lval(\vect{w}_T, \vect{\alpha})\vect{B}_T.
+  \end{align*}
+  \end{small}
+
+  
+\end{frame}
+
+
+\begin{frame}{Результаты вычислительного эксперимента}
+  \begin{itemize}
+    \item Рассматриваются задачи классификации на $n$ классов с $k$ примерами на каждый класс ($n$-way, $k$-shot).
+    \item  Приводится точность предсказаний на мета-контроле,
     а также вычислительная сложность итерации подсчета гиперградиента.
-    \item Сравниваются следующие методы: FO, IFT, $T1-T2$.
   \end{itemize}
   \begin{table}
     \centering
@@ -255,83 +260,11 @@
     IFT & 11 & 40.14 $\pm$ 0.73 & 33.23 $\pm$ 0.41 & 27.20 $\pm$ 0.52 \\
     Ours ($\gamma = 0.99$) & 10 & \textbf{46.10} $\pm$ \textbf{0.82} & \textbf{36.94} $\pm$ \textbf{1.07} & \textbf{29.79} $\pm$ \textbf{0.62} \\ \bottomrule
     \end{tabular}
-\end{table}
-
+  \end{table}
 Из таблицы видно, что предложенный метод превосходит существующие методы градиентной оптимизации гиперпараметров в терминах 
 точности предсказаний на мета-контроле, имея сопоставимые вычислительные затраты.
   
 \end{frame}
-
-
-
-
-
-% \begin{frame}{Постановка вычислительного эксперимента}
-
-% \begin{itemize}
-% \item Цель -- получение зависимости качества работы мультимодели и
-% количества ее параметров в зависимости от используемого регуляризатора.
-% \item Эксперимент проводится на подвыборке MNIST. В качестве доменов рассматриваются
-% изображения, повернутые на угол, кратный $\pi/2$. Число доменов меняется от 1 до 4.
-%  Сравниваются следующие модели:
-% мультимодель со структурной регуляризацией, мультимодель с регуляризацией скрытых представлений,
-% а также модель, не учитывающая разбиение выборки на домены.
-% \item Оценивается средняя точность (accuracy) на тестовой выборке для каждого из доменов.
-% Также приводится количество параметров для каждой модели.
-% \end{itemize}
-
-% \end{frame}
-
-
-% \begin{frame}{Результаты вычислительного эксперимента}
-%   \begin{table}[h!]
-%     \centering
-%      \begin{tabular}{||c c c||}
-%      \hline
-%      model & accuracy & num. of params \\ [0.5ex] \hline\hline
-%      \multicolumn{3}{|| c ||}{1 domain} \\
-%       single & 60.59 & 5029 \\ \hline \hline 
-
-%      \multicolumn{3}{|| c ||}{2 domains} \\
-%      single, union & 66.95 & 6560 \\
-%      multimodel, struct & 62.86 & \textbf{5248} \\
-%      multimodel, contr & \textbf{69.64} & 9328 \\
-%      \hline \hline
-
-%      \multicolumn{3}{|| c ||}{3 domains} \\
-%      single, union & 63.02 & 5685\\
-%      multimodel, struct & 64.85 & \textbf{6826}\\
-%      multimodel, contr & \textbf{65.01} & 12096 \\
-%      \hline\hline
-
-%      \multicolumn{3}{|| c ||}{4 domains} \\
-%      single, union & 67.16 & 6560\\
-%      multimodel, struct & 63.15 & \textbf{7872}\\
-%      multimodel, contr & \textbf{67.98} & 13685 \\
-%      \hline\hline
-%      \end{tabular}
-%     \end{table}
-% \end{frame}
-
-
-% \begin{frame}{Вычислтельный эксперимент на задче языкового моделирования}
-%   \begin{enumerate}
-%     \item Задача языкового моделирования решалась на выборке IWSLT14.
-%     \item Расматривались одиночные модели, решающие задачу на одном домене и на
-%     объединении доменов, а также предлагаемая мультимодель.
-%   \end{enumerate}
-%   \begin{table}
-%     \centering
-%     \begin{tabular}{|c|c|c|}
-%       \hline
-%       \textbf{Model} & \textbf{En, ppl} & \textbf{De, ppl} \\ \hline
-%       Single, En & \textbf{59.35} & - \\ 
-%       Single, De & - & - \\ \hline
-%       Single, En+De & 72.68 & 82.15 \\
-%       Multimodel & \textbf{64.91} & \textbf{74.06} \\ \hline
-%     \end{tabular}
-%   \end{table} 
-% \end{frame}
 
 
 
@@ -362,13 +295,36 @@
 \end{frame}
 
 
-% \begin{frame}{Список публикаций}
-%   \begin{itemize}
-%     \item \textbf{(core-A*)} Yakovlev K. et al. GEC-DePenD: Non-Autoregressive Grammatical Error Correction with Decoupled Permutation and Decoding //Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers). – 2023. – С. 1546-1558.
-%     \item \textbf{(core-A*)} Yakovlev K. et al. Sinkhorn Transformations for Single-Query Postprocessing in Text-Video Retrieval //Proceedings of the 46th International ACM SIGIR Conference on Research and Development in Information Retrieval. – 2023. – С. 2394-2398.
-%     \item Yakovlev K. D. et al. Neural Architecture Search with Structure Complexity Control //International Conference on Analysis of Images, Social Networks and Texts. – Cham : Springer International Publishing, 2021. – С. 207-219.
-%   \end{itemize}
-% \end{frame}
+\begin{frame}{Список публикаций}
+  \begin{small}
+  \begin{itemize}
+    \item \textbf{(core-A*)} Yakovlev K. et al. GEC-DePenD: Non-Autoregressive Grammatical Error Correction with Decoupled Permutation and Decoding //Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers). – 2023. – С. 1546-1558.
+    \item \textbf{(core-A*)} Yakovlev K. et al. Sinkhorn Transformations for Single-Query Postprocessing in Text-Video Retrieval //Proceedings of the 46th International ACM SIGIR Conference on Research and Development in Information Retrieval. – 2023. – С. 2394-2398.
+    \item Yakovlev K. D. et al. Neural Architecture Search with Structure Complexity Control //International Conference on Analysis of Images, Social Networks and Texts. – Cham : Springer International Publishing, 2021. – С. 207-219.
+  \end{itemize}
+  \end{small}
+\end{frame}
+
+
+\begin{frame}{Выступления на конференциях}
+  \begin{itemize}
+  \item Яковлев К.Д. Обобщенная жадная градиентная оптимизация гиперпараметров. //Труды
+  66-й Всероссийской
+  научной конференции
+  МФТИ. 2024.
+  \item Яковлев К.Д. Поиск согласованных нейросетевых моделей в задаче мультидоменного обучения. //Труды
+  65-й Всероссийской
+  научной конференции
+  МФТИ в честь 115-летия
+  Л.Д. Ландау. - 2023.
+  \item Яковлев К.Д., Гребенькова О.С., Бахтеев О.Ю., Стрижов В.В. Выбор архитектуры модели с контролем сложности //
+  Труды
+  64-й Всероссийской
+  научной конференции
+  МФТИ. - 2021.
+  \end{itemize}
+  
+\end{frame}
 
 %----------------------------------------------------------------------------------------------------------
 \end{document} 
