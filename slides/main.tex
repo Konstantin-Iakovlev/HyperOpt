@@ -123,7 +123,7 @@
   \item Пусть внутренняя задача решается с помощью оптимизатора $\mathbf{\Phi}(., .)$:
   \begin{align*}
     \mathbf{w}_{t + 1}(\boldsymbol{\alpha}) = \mathbf{\Phi}(\mathbf{w}_t, \boldsymbol{\alpha}), \quad
-    t = \overline{1, T}.
+    t = \overline{1, T}; \quad \vect{\Phi}(\vect{w}_{t}, \vect{\alpha}) = \vect{w}_t - \eta\nabla_{\vect{w}_t}\ltrn(\vect{w}_t, \vect{\alpha})
   \end{align*}
   \item Гиперградиент запишется как:
   \begin{align*}
@@ -135,9 +135,9 @@
 
 
 \begin{frame}{Аппроксимация гиперградиента}
-  Пусть задано $\gamma \in (0, 1)$. Тогда аппроксимация гиперградиента запишется как:
+  Пусть задано ${\color{olive}\gamma} \in (0, 1)$. Тогда аппроксимация гиперградиента запишется как:
   \begin{align*}
-    \hat{d}_{\vect{\alpha}}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha}; \gamma) = \nabla_{\vect{\alpha}}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha}) + \sum_{t=1}^T\gamma^{T-t}\nabla_{\vect{w}_t}\mathcal{L}_\text{val}(\vect{w}_t, \vect{\alpha})\vect{B}_t.
+    {\color{violet}\hat{d}_{\vect{\alpha}}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha}; \gamma)} = \nabla_{\vect{\alpha}}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha}) + \sum_{t=1}^T{\color{olive}\gamma^{T-t}}{\color{teal}\nabla_{\vect{w}_t}\mathcal{L}_\text{val}(\vect{w}_t, \vect{\alpha})\vect{B}_t}.
   \end{align*}
   \begin{figure}
   \scalebox{0.9}{
@@ -153,12 +153,12 @@
     \draw [-{Stealth[scale=2]}] (wtm1) to (p1);
     \node at (6, -2) [circle,draw] (wt) {$\vect{w}_{t}$};
     \draw [-{Stealth[scale=2]}] (p1) to (wt);
-    \node at (3,-4) [rectangle,draw] (h1) {$\gamma^{T-t}\nabla_{\vect{w}_{t}}\lval(\vect{w}_t, \vect{\alpha})\vect{B}_t$};
+    \node at (3,-4) [rectangle,draw] (h1) {${\color{olive}\gamma^{T-t}}\color{teal}\nabla_{\vect{w}_{t}}\lval(\vect{w}_t, \vect{\alpha})\vect{B}_t$};
     \draw [-{Stealth[scale=2]},dashed] (p1) to (h1);
     \node at (6,0) [rectangle,draw] (gt) {$\nabla_{\vect{w}_{t}}\ltrn(\vect{w}_{t}, \vect{\alpha})$};
     \node at (9,0) [circle,draw,minimum size = 0pt, inner sep=0pt,label=90:$-\eta$] (m2) {$\times$};
     \node at (9,-2) [circle,draw,minimum size = 0pt, inner sep=0pt,] (p2) {$+$};
-    \node at (8,-4) [rectangle,draw] (h2) {$\gamma^{T-t-1}\nabla_{\vect{w}_{t+1}}\lval(\vect{w}_{t+1}, \vect{\alpha})\vect{B}_{t+1}$};
+    \node at (8,-4) [rectangle,draw] (h2) {${\color{olive}\gamma^{T-t-1}}\color{teal}\nabla_{\vect{w}_{t+1}}\lval(\vect{w}_{t+1}, \vect{\alpha})\vect{B}_{t+1}$};
     \draw [-{Stealth[scale=2]},dashed] (p2.south) to (p2.south|-h2.north);
     \draw [-{Stealth[scale=2]},] (wt) to (gt);
     \draw [-{Stealth[scale=2]},] (gt) to (m2);
@@ -168,7 +168,7 @@
     \draw[draw=black,dashed] (11,-3) rectangle ++(-10.5, -2);
     \node at (-2,-3.5) [circle,draw] (summ) {$\Sigma$};
     \draw [-{Stealth[scale=2]},] (0.5,-3.5) -- (-1.6,-3.5);
-    \node at (-2, -4.7) [rectangle, draw] (hyp) {$d_{\vect{\alpha}}\lval(\vect{w}_T, \vect{\alpha};\gamma)$};
+    \node at (-2, -4.7) [rectangle, draw] (hyp) {$\color{violet}d_{\vect{\alpha}}\lval(\vect{w}_T, \vect{\alpha};\gamma)$};
     \draw [-{Stealth[scale=2]},] (summ) to (hyp);
     %imaginar lines
     \node at (-2, -2) [circle,] (aux) {};
@@ -223,10 +223,24 @@
   \begin{itemize}
     \item Цель -- сравнение качества предложенного подхода с существующими методами подсчета гиперградиента.
     \item Эксперимент проводится на задаче мета-обучения.
+    \begin{minipage}{0.49\textwidth}
     \begin{align*}
       \vect{\alpha}^* &= \arg\min_{\vect{\alpha}}\mathbb{E}_{\mathcal{T}}\mathbb{E}_{\mathcal{S}|\mathcal{T}}\lval(\vect{w}^*, \vect{\alpha}; \mathcal{S}),\\
       \mathrm{s.t.} \quad \vect{w}^* &= \arg\min_{\vect{w}}\ltrn(\vect{w}, \vect{\alpha};\mathcal{S}).
     \end{align*}
+    \end{minipage}%
+    \begin{minipage}{0.49\textwidth}
+      \centering
+      \begin{tikzpicture}
+        \draw[rounded corners=5pt,label=S,draw] (0,0) rectangle ++(0.6,1.5) node[pos=.5] (inp) {$\mathcal{S}$};
+        \draw[rounded corners=5pt,label=S,draw] (1,0) rectangle ++(1.6,1.5) node[pos=.5] (model) {$\vect{\alpha}$};
+        \draw[rounded corners=5pt,label=S,draw] (3,0) rectangle ++(0.6,1.5) node[pos=.5] (w) {$\vect{w}$};
+        \draw node[circle,draw] at (4.5, 0.75) (out) {$\mathcal{L}$};
+        \draw [-{Stealth[scale=1]},] (0.6, 0.75) -- (1.0, 0.75);
+        \draw [-{Stealth[scale=1]},] (2.6, 0.75) -- (3.0, 0.75);
+        \draw [-{Stealth[scale=1]},] (3.6, 0.75) -- (4.15, 0.75);
+      \end{tikzpicture}
+    \end{minipage}
     \item В сравнении участвуют следующие базовые методы:
   \end{itemize}
   \begin{small}
