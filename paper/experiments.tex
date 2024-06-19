@@ -1,0 +1,63 @@
+\section{Experiments}
+In this section we present numerical experiments that validate the effectiveness and efficiency of the proposed approach. Upon acceptance, we will make the source codes available.
+
+\subsection{Baselines}
+
+For comparison, we consider the following list of baselines that are efficient in terms of space and latency:
+\begin{itemize}
+    \item $\mathbf{T1-T2}$ \cite{luketina2016scalable}. The method performs an unrolled differentiation using only the last step of inner optimization, so it performs a JVP.
+    \item \textbf{IFT} \cite{lorraine2020optimizing}. The method combines the implicit function theorem (IFT) with efficient approximations of the inverse Hessian. The number of JVPs is controlled by the number of terms taken from  the Neumann series.
+    \item \textbf{FO}. The method uses only the first-order gradient from \eqref{eq:hypergrad_full}, namely $\nabla_{\vect{\alpha}}\lval(\vect{w}_T, \vect{\alpha})$. Note that it is not applicable for tasks for which the outer objective does not depend explicitly on the vector of hyperparameters $\vect{\alpha}$.
+\end{itemize}
+
+
+% \subsection{Data hyper-cleaning}
+
+% Following \cite{franceschi2017forward}, the task is formulated as follows. Given a training dataset $\mathfrak{D}_\text{train} = \{(\vect{x}_i, y_i)\}_{i=1}^{n_\text{train}}$, where $\vect{x}_i$ is an object and $y_i$ is a class label. Similary, define a validation dataset $\mathfrak{D}_\text{val} = \{(\vect{x}_i, y_i)\}_{i=1}^{n_\text{val}}$. We assume that the labels of the training dataset are corrupted. More precisely, the label is replaced by a random class with probability $p_\text{noise}$. To mitigate the influence of noisy labels we introduce a vector of weights for each training object $\vect{\alpha} \in \mathbb{R}^{n_\text{train}}$. The task is to find a vector such that the model trained on the reweighted samples achives the optimal validation performance on clan data. Given model parameters $\vect{w}$. The training loss function is $\mathcal{L}_\text{train}(\vect{w}, \vect{\alpha}) = \sum_{(\vect{x}_i, y_i) \in \mathfrak{D}_\text{train}}\sigma(\alpha_i)\ell(\vect{w},\vect{x}_i, y_i)$, where $\sigma(.)$ is a sigmoid function, $\ell(.)$ is a cross-entropy loss function for the training pair $(\vect{x}_i, y_i)$. The validation loss function is $\mathcal{L}_\text{val}(\vect{w}, \vect{\alpha}) = \sum_{(\vect{x}_i, y_i) \in \mathfrak{D}_\text{val}}\ell(\vect{w}, \vect{x}_i, y_i)$.
+
+% We run the experiment on CIFAR-10 \cite{krizhevsky2009learning} dataset. We randomly select a subset of 2K instances from the training split for the inner objective. As for the outer objective, we take the whole test split. The inner optimization is done in full-batch manner using SGD with a learning rate of $10^{-1}$ and momentum $0.9$, while the outer problem is optimized with Adam with a learning rate of $10^{-2}$. ResNet-18 \cite{he2016deep} was used as a model. We set the number of inner steps to $T=5$
+% and the number of outer updates to $300$. We tune $\gamma$ within the set $\{0.9, \, 0.99, 0.999\}$ and select the best-performing value for each $p_\text{noise}$. The experiments have demonstrated that $\gamma=0.99$ performs uniformly well. 
+
+% \begin{table}[]
+%     \centering
+%     \begin{tabular}{c|c|ccc}
+%     \toprule
+%     \textbf{Method} & \textbf{\#JVPs} &  $p_\text{noise}=0.3$ & $p_\text{noise}=0.5$ & $p_\text{noise}=0.7$ \\
+%     \midrule
+%     w/o HPO & - & 28.94 & 25.17 & 19.23 \\
+%     IFT & 5 & 28.97 & 25.81 & 20.89 \\
+%     $T1-T2$ & 1 & 30.38 & 26.76 & 21.38 \\
+%     Ours ($\gamma = 0.99$) & 5 & 30.39 & 26.77 & 21.47 \\ \bottomrule
+%     \end{tabular}
+%     \caption{The results for data hyper-cleaning experiment. Validation accuracy is reported.}
+%     \label{tab:data_clean}
+% \end{table}
+
+% We report the validation accuracy of the compared baselines and the proposed method in Table \ref{tab:data_clean} for different values of $p_\text{noise}$
+% as well as the number of JVPs. We also report the metrics for the baseline without hyper-cleaning, i.e. $\vect{\alpha} = \vect{0}$. The results suggest that the proposed method outperforms the baselines in terms of validation accuracy, having comparable computational cost.
+
+
+\subsection{Gradient-based Meta-Learning}
+
+We consider gradient-base Meta-Learning task for few-shot image classification task \cite{finn2017model} in a $K$-shot $m$-way setting. As for the model, we consider a 3-layer convolutional network with 32 channels. Inspired by \cite{raghu2019rapid, javed2019meta}, we treat the logits head as a model parameters and the backbone of the convolutional network as hyperparameters. We conduct the experiment using CIFAR100 dataset \cite{krizhevsky2009learning} that contains 100 classes, which are ranomly splited into 50 for meta-training and 50 for meta-validation. The training and validation splits for each task consist of $K$ samples for each class.
+
+The inner optimization is done using SGD with a learning rate of $10^{-1}$ and momentum $0.9$, while the outer problem is optimized with Adam with a learning rate of $10^{-3}$. The number of outer steps is set to $200$ and set $T=10$. Additionally, meta-batchsize is set to $10$. We tune $\gamma$ for the proposed approach within the set $\{0.9, \, 0.99, 0.999\}$ and select the best-performing value for each task using the meta-validation split. Interestingly, $\gamma=0.99$ performs remarkably well irrespective of the task.
+
+The accuracy on meta-validation split is presented in Table \ref{tab:meta_learn} for different few-shot scenarios, along with the number of JVPs.
+We report the mean and a 95\% confidence interval based on 20 trials using different random seeds
+. It could be clearly seen that the proposed approach shows substantial improvements over the baselines in terms of accuracy on the meta-validation split.
+
+
+\begin{table}[]
+    \centering
+    \begin{tabular}{c|c|ccc}
+    \toprule
+    \textbf{Method} & \textbf{\#JVPs} & \textbf{3-way, 10-shot} & \textbf{4-way, 10-shot} & \textbf{5-way, 10-shot} \\ \midrule
+    FO & 0 & 43.48 $\pm$ 1.64 & 34.15 $\pm$ 1.28 & 28.59 $\pm$ 1.0 \\
+    $T1-T2$ & 1 & 42.96 $\pm$ 1.89 & 33.95 $\pm$ 1.53 & 27.59 $\pm$ 0.99 \\
+    IFT & 11 & 40.14 $\pm$ 2.26 & 33.23 $\pm$ 0.99 & 27.20 $\pm$ 1.12 \\
+    Ours ($\gamma = 0.99$) & 10 & \textbf{46.10} $\pm$ \textbf{1.95} & \textbf{36.94} $\pm$ \textbf{2.55} & \textbf{29.79} $\pm$ \textbf{1.33} \\ \bottomrule
+    \end{tabular}
+    \caption{Few-shot accuracy of the meta-learning task.}
+    \label{tab:meta_learn}
+\end{table}

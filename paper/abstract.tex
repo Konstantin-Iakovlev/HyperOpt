@@ -1,0 +1,5 @@
+\begin{center}
+    \Large{\textbf{Abstract}}
+\end{center}
+
+Bilevel Optimization (BLO) is a widely-used approach that has numerous applications, including hyperparameter optimization, meta-learning. However, existing gradient-based method suffer from the following issues. Reverse-mode differentiation suffers from high memory requirements, while the methods based on the implicit function theorem require the convergence of the inner optimization. The approximations that consider a truncated inner optimization trajectory suffer from a short horizon bias. In this paper, we propose a novel approximation for hypergradient computation that sidesteps this difficulties. Specifically, we accumulate the short-horizon approximations from each step of the inner optimization trajectory. We also show that, under certain conditions, the proposed hypergradient is a sufficient descent direction. Experimental results on a few-shot meta-learning task support our findings.

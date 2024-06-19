@@ -1,0 +1,45 @@
+\section{Introduction}
+Bilevel optimization has become an essential component of machine learning, which includes Neural Architecture Search \cite{liu2018darts, pham2018efficient, zoph2016neural}, Hyperparameter Optimization \cite{hutter2019automated}, and Meta-Learning \cite{hospedales2021meta, nichol2018first, finn2017model}. In the hierarchical optimization framework, the outer-level objective is aimed to be minimize given the optimality in the inner level. Solving the bilevel problem is challenging due to the intricate dependency of the optimal inner parameters given the outer parameters.
+
+Naive approaches such as random search and grid search \cite{bergstra2012random} become impractical with the growing number of hyperparameters to be optimized due to the curse of dimensionality. Another approach that has proven effective in low-dimensional setting is Bayesian Optimization \cite{snoek2012practical}. However, its extension to high-dimensional setting is challenging \cite{wang2023recent}. 
+
+In the current work we develop a novel gradient-based algorithm \cite{bengio2000gradient}. The challenge is that the exact hypergradient calculation is computationally demanding \cite{franceschi2017forward}. Specifically, Forward-Mode differentiation (FMD) is memory demanding, since it increases linearly with the number of hyperparameters. This limits the application of the method for large-scale problems with millions of hyperparameters, such as meta-learning. By contrast, Revers-Mode Differentiation (RMD) perfectly scales to problems with millions of hyperparameters, but it requires the full inner optimization trajectory of model parameters to be saved, which is computationally costly. Moreover, RMD suffers from gradient vanishing or explosion \cite{antoniou2018train}, which leads to training instability. Truncation of the optimization trajectory was proposed to alleviate high memory consumption \cite{shaban2019truncated} while calculating an approximate hypergradient.
+%TODO: state that this family is not suitable for online optimization.
+However, this approach suffers from short horizon bias \cite{wu2018understanding}. Following \cite{micaelli2020non}, we define greediness as finding the optimal hyperparameters on a local scale, rather than on a global scale.
+%TODO: few words about it.
+
+Alternatively, an implicit differentiation may be used to compute the hypergradient \cite{lorraine2020optimizing, luketina2016scalable, pedregosa2016hyperparameter}. This approach mitigates the need for unrolling, but it heavily relies on Implicit Function Theorem, which requires the convergence of the inner optimization  \cite{grazzi2020iteration, blondel2022efficient}. The challenge of this family of methods is computing inverse Hessian-vector product. This computation may be approximated with Neumann series \cite{lorraine2020optimizing} or conjugate gradients \cite{pedregosa2016hyperparameter}.
+
+In this paper, we propose an alternative approach to hypergradient computation. We generalize the method from \cite{luketina2016scalable}. Namely, the proposed approach resolves the following issues simultaneously: short horizon bias, high memory requirements, applicability to large-scale problems with millions of hyperparameters, and independence of inner optimization convergence. Overall, our contributions are as follows:
+\begin{enumerate}
+    \item we introduce a procedure that aggregates the greedy gradients  calculated at each iteration of the inner objective, which satisfies the requirements above.
+    \item We provide a theoretical analysis of the proposed approach. Under some assumptions, a sufficient descent condition holds.
+    \item We empirically prove the effectiveness of the proposed approach on a Meta-Learning task.
+\end{enumerate}
+
+
+\begin{table}[]
+    \caption{Comparison of gradient-based methods for hyperparameter optimization. Here, $P$ represents the number of model parameters, and $H$ represents the number of hyperparameters. Additionally, $K$ represents the number of terms in the Neumann approximation.}
+    \centering
+    \begin{tabular}{p{4cm}|ccccc} \toprule
+         & \textbf{RMD} \cite{franceschi2017forward} & \textbf{FMD} \cite{franceschi2017forward} & \textbf{IFT} \cite{lorraine2020optimizing} & $\mathbf{T1-T2}$ \cite{luketina2016scalable} & \textbf{Ours}  \\ \midrule\midrule
+        Long Horizon & Yes & Yes & Yes & No & Yes \\ \midrule
+        Scalable to large amount of hyperparameters & Yes & No & Yes & Yes & Yes \\ \midrule
+        Space Complexity & $O(PT)$ & $O(PH)$ & $O(P+H)$ & $O(P+H)$ & $O(P+H)$ \\ \midrule
+        Time complexity & $O(T)$ & $O(HT)$ & $O(K)$ & $O(1)$ & $O(T)$ \\ \midrule
+        No inner optimality & Yes & Yes & No & Yes & Yes \\ \bottomrule
+    \end{tabular}
+
+    \label{tab:comparison}
+\end{table}
+
+
+\begin{figure}[h]
+    \centering
+    \label{fig:hypergrad}
+    \small
+    \includegraphics[]{figure.pdf}
+\caption{The schematic illustration of the proposed approach. In general, the approximate hypergradient is calculated as a weighted sum of the locally optimal greedy gradients calculated at each inner optimization step.}
+\end{figure}
+
+

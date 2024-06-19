@@ -1,0 +1,146 @@
+\section{The Method}
+
+\subsection{Hypergradient approximation}
+
+In this section we introduce a computationally efficient approximation to \eqref{eq:hypergrad_full}. Specifically, consider the $t$-th step of the inner optimization. The challenge is that the computation of $\prod_{k=t+1}^T\vect{A}_k$ requires the tail of the trajectory $\vect{w}_t, \ldots, \vect{w}_T$. To this end, we introduce an approximation of the product with $\gamma^{T - t}$, where $\gamma \in (0, 1]$.
+We motivate the choice of $\gamma$ by the fact that $(1 - \eta L)\vect{I} \preceq \vect{A}_k\preceq \vect{I}$ if $\ltrn(., \vect{\alpha})$ is $L$-smooth and convex for any $\vect{\alpha} \in \mathbb{R}^H$. Indeed, if we assume that $\vect{\Phi}(., .)$ is a vanilla gradient descent, then $\vect{A}_k = \vect{I} - \eta\nabla^2_{\vect{w}_{k-1}}\ltrn(\vect{w}_{k-1}, \vect{\alpha})$. Due to the convexity and $L$-smoothness of $\ltrn(., \vect{\alpha})$ we conclude that $\vect{0} \preceq \nabla^2_{\vect{w}_{k-1}}\ltrn(\vect{w}_{k-1}, \vect{\alpha}) \preceq L\vect{I}$. So, choosing the step size $\eta \leq L^{-1}$, we conclude that the spectrum of $\vect{A}_k$ is bounded between $0$ and $1$ for any choice of $\vect{\alpha}$ and $k$. Additionally, we replace the gradient of the validation loss $\nabla_{\vect{w}_T}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha})$ with the gradient from the current iteration $\nabla_{\vect{w}_t}\mathcal{L}_\text{val}(\vect{w}_t, \vect{\alpha})$ due to the same reason. Write down the proposed approximation:
+\begin{align}\label{eq:hypergrad_ours}
+    \hat{d}_{\vect{\alpha}}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha}; \gamma) = \nabla_{\vect{\alpha}}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha}) + \sum_{t=1}^T\gamma^{T-t}\nabla_{\vect{w}_t}\mathcal{L}_\text{val}(\vect{w}_t, \vect{\alpha})\vect{B}_t.
+\end{align}
+Note that the intuition from \eqref{eq:hypergrad_ours} was previously used in \cite{lee2021online}. However, it was used as an intermediate step in the reasoning. Moreover, the approximation of the gradient of the validation loss function w.r.t. model parameters was not considered. Figure \ref{fig:hypergrad} shows a schematic overview of the propsed approach.
+
+
+\subsection{Generalization of $T1-T2$}
+
+Note that the proposed hypergradient computation \eqref{eq:hypergrad_ours} is a generalization of $T1-T2$ hypergradient \cite{luketina2016scalable} when $\gamma$ tends to zero. Below we formulate a formal statement.
+
+\begin{proposition}\label{prop:limit}
+    Let $\hat{d}_{\vect{\alpha}}(\vect{w}_T, \vect{\alpha}; \gamma)$ be the hypergradient defined in \eqref{eq:hypergrad_ours}. Then, the following holds:
+    \begin{align}\label{eq:limit}
+        \lim_{\gamma \to 0^+}\hat{d}_{\vect{\alpha}}(\vect{w}_T, \vect{\alpha}; \gamma) = \nabla_{\vect{\alpha}}\lval(\vect{w}_T, \vect{\alpha}) + \nabla_{\vect{w}_T}\lval(\vect{w}_T, \vect{\alpha})\vect{B}_T.
+    \end{align}
+\end{proposition}
+
+\begin{proof}
+    First, using the definition of $\hat{d}_{\vect{\alpha}}(\vect{w}_T, \vect{\alpha}; \gamma)$ from \eqref{eq:hypergrad_ours}, we conclude that:
+    \begin{align*}
+        \hat{d}_{\vect{\alpha}}(\vect{w}_T, \vect{\alpha}; \gamma) = \nabla_{\vect{\alpha}}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha}) + \nabla_{\vect{w}_T}\lval(\vect{w}_T, \vect{\alpha})\vect{B}_T + \gamma\sum_{t=1}^{T-1}\gamma^{T-t-1}\nabla_{\vect{w}_t}\lval(\vect{w}_t, \vect{\alpha})\vect{B}_t.
+    \end{align*}
+    Second, note that the last term tends to zero:
+    \begin{align*}
+        \lim_{\gamma\to0^+} \gamma\sum_{t=1}^{T-1}\gamma^{T-t-1}\nabla_{\vect{w}_t}\lval(\vect{w}_t, \vect{\alpha})\vect{B}_t = \vect{0}.
+    \end{align*}
+    The combination of the above two steps completes the proof.
+\end{proof}
+
+Here the right hand side of $\eqref{eq:limit}$ is the hypergradient of in $T1-T2$ \cite{luketina2016scalable}. The result given in Proposition \ref{prop:limit} suggest that $T1-T2$ hypergradient is a special case of the proposed one. Additionally, it could be clearly seen that the proposed hypergradient computation is conditioned on the whole trajectory of model parameters. We argue that this approach does not suffer from a short-horizon bias problem \cite{wu2018understanding}.
+
+\subsection{Descent Direction Analysis}
+Here we discuss the quality of the proposed hypergradient approximation \eqref{eq:hypergrad_ours}. We show that the sufficient descent condition holds under some assumptions. Inspired by \cite{shaban2019truncated, ghadimi2018approximation}, we first formulate a standard set of assumptions.
+\begin{assumption}\label{asn:std}
+     Suppose that the following assumptions on the functions $\ltrn(., .)$, $\lval(., .)$, and the optimization operator $\vect{\Phi}(., .)$ are satisfied:
+     \begin{enumerate}
+         \item $\lval(., \vect{\alpha})$ is $L$-smooth and $\mu$-strongly convex for any $\vect{\alpha}$.
+        \item $\frac{\partial\vect{\Phi}(., \vect{\alpha})}{\partial\vect{\alpha}}$ is $C_B$-Lipschitz for any $\vect{\alpha}$.
+        \item $\|\frac{\partial\vect{\Phi}(\vect{w}, \vect{\alpha})}{\partial\vect{\alpha}}\|_\text{op} \leq B$ for any pair $(\vect{w}, \vect{\alpha})$ for some $B \geq 0$.
+        \item $\vect{w}$ belongs to a bounded convex set with diameter $D < \infty$.
+        \item $\vect{\Phi}(\vect{w}, \vect{\alpha}) = \vect{w} - \eta\nabla_{\vect{w}}\ltrn(\vect{w}, \vect{\alpha})$ for some $\eta \geq 0$.
+     \end{enumerate}
+\end{assumption}
+
+
+Second, we formulate and justify specific assumptions.
+\begin{assumption}\label{asn:spec}
+Suppose that the following holds for $\ltrn(., .)$ and  $\lval(., .)$:
+    \begin{enumerate}
+        \item $\nabla^2_{\vect{w}}\ltrn(., \vect{\alpha}) = \vect{I}$ \, for any $\vect{\alpha}$. Note that this assumption does not hold in practice. However, \cite{luketina2016scalable} argues that batch normalization \cite{ioffe2015batch} forces the Hessian to be close to the identity matrix.
+        \item $\nabla_{\vect{\alpha}}\lval(\vect{w}, \vect{\alpha}) = \vect{0}$ \, for any $\vect{w}$. This assumption is typical for hyperparameter optimization and data hypercleaning \cite{franceschi2017forward}.
+        \item $\vect{B}_t\vect{B}_t^\top \succeq \kappa \vect{I}$ \, for some $\kappa > 0$. We note that the assumption that $\vect{B}_t$ is a full-rank matrix was used in \cite{shaban2019truncated}. However, we impose more strict assumption to simplify the proofs.
+        \item Define $\vect{w}_{\infty} := \arg\min_{\vect{w}}\ltrn(\vect{w}, \vect{\alpha})$, $\vect{w}^*_2 := \arg\min_{\vect{w}}\lval(\vect{w}, \vect{\alpha})$. \\ Assume that $\|\vect{w}_{\infty} - \vect{w}_2^*\| \geq 2De^{-\mu\eta T} + \delta$, for some $\delta > 0$. Also assume that $\nabla_{\vect{w}_2^*}\lval(\vect{w}_2^*, \vect{\alpha}) = \vect{0}$ for any $\vect{\alpha}$. Intuitively, this requirements asserts that an overfitting takes place, and the minimum is reached in the interior of the feasible set.
+    \end{enumerate}
+\end{assumption}
+
+
+% \begin{assumption}\label{asns}
+%     Suppose that the following assumptions on the functions $\ltrn(., .)$, $\lval(., .)$, and the optimization operator $\vect{\Phi}(., .)$ are satisfied:
+%     \begin{itemize}
+%         \item $\lval(., \vect{\alpha})$ is $L$-smooth and $\mu$-strongly convex for any $\vect{\alpha}$.
+%         \item $\nabla^2_{\vect{w}}\ltrn(., \vect{\alpha}) = \vect{I}$ \, for any $\vect{\alpha}$.
+%         \item $\nabla_{\vect{\alpha}}\lval(\vect{w}, \vect{\alpha}) = \vect{0}$ \, for any $\vect{w}$.
+%         \item $\vect{B}_t\vect{B}_t^\top \succeq \kappa \vect{I}$ \, for some $\kappa > 0$.
+%         \item $\vect{B}_t(., \vect{\alpha})$ is $C_B$-Lipschitz for any $\vect{\alpha}$.
+%         \item $\|\vect{B}_t\| \leq B$ for any pair $(\vect{w}, \vect{\alpha})$ for some $B \geq 0$.
+%         \item $\vect{\Phi}(\vect{w}, \vect{\alpha}) = \vect{w} - \eta\nabla_{\vect{w}}\ltrn(\vect{w}, \vect{\alpha})$ for some $\eta \in (0, 1)$.
+%         \item $\vect{w}$ belongs to a bounded convex set with diameter $D$.
+%         \item Define $\vect{w}_{\infty} := \arg\min_{\vect{w}}\ltrn(\vect{w}, \vect{\alpha})$, $\vect{w}^*_2 := \arg\min_{\vect{w}}\lval(\vect{w}, \vect{\alpha})$. Assume that $\|\vect{w}_{\infty} - \vect{w}_2^*\| \geq 2De^{-\mu\eta T} + \delta$, for some $\delta > 0$. Intuitively, this requirements asserts that an overfitting takes place.
+%     \end{itemize}
+% \end{assumption}
+
+\begin{lemma}(\cite{shaban2019truncated})\label{lemma:conv}
+In the assumptions above \ref{asn:std}, \ref{asn:spec}, the sequence $\{\vect{w}_t\}_{t \geq 0}$ satisfies:
+\begin{align}\label{eq:lemma_conv}
+    \|\vect{w}_t - \vect{w}_\infty\|_2 \leq \|\vect{w}_0 - \vect{w}_\infty\|_2e^{-\eta t}.
+\end{align}
+
+\end{lemma}
+
+\begin{lemma}\label{lamma:bound_grad}
+    Let the assumptions \ref{asn:std}, \ref{asn:spec} hold. Then the following is true:
+    \begin{align}
+        \|\nabla_{\vect{w}_T}\lval(\vect{w}_T, \vect{\alpha})\|_2 \geq \mu\delta.
+    \end{align}
+\end{lemma}
+
+\begin{proof}
+    First, use the Polyak-Lojasiewicz condition, since $\lval(., .)$ is $\mu$-strongly convex in the first argument due to \ref{asn:std}. Second, use the strong convexity of $\lval(., \vect{\alpha})$ according to \ref{asn:std}. Third, use Lemma \ref{lemma:conv} for $\vect{w}_T$, and finally the overfitting condition from \ref{asn:spec}:
+    \begin{align*}
+        \|\nabla_{\vect{w}_T}\lval(\vect{w}_T, \vect{\alpha})\|_2^2 &\stackrel{\ref{asn:std}(1)}{\geq} 2\mu(\lval(\vect{w}_T, \vect{\alpha}) - \lval(\vect{w}_2^*, \vect{\alpha})) \\
+        &\stackrel{\ref{asn:std}(1)}{\geq} \mu^2\|\vect{w}_T - \vect{w}_2^*\|^2 \\
+        &\geq \mu^2(\|\vect{w}_T - \vect{w}_\infty\|_2^2 + \|\vect{w}_2^* - \vect{w}_{\infty}\|_2^2 - 2\|\vect{w}_T - \vect{w}_\infty\|_2\cdot\|\vect{w}_2^* - \vect{w}_\infty\|_2) \\
+        &\stackrel{\ref{lemma:conv}}{\geq} \mu^2(\|\vect{w}_2^* - \vect{w}_{\infty}\|_2 - 2De^{-\mu\eta T})\|\vect{w}_2^* - \vect{w}_\infty\|_2 \\
+        &\stackrel{\ref{asn:spec}(4)}{\geq} \mu^2\delta^2.
+    \end{align*}
+\end{proof}
+The following theorem guarantees that the proposed hypergradient is a sufficient descent direction.
+\begin{theorem}
+    Suppose that $\gamma = 1 - \eta \in (0, 1)$. Then, under the assumptions above \ref{asn:std}, \ref{asn:spec}, there exists a sufficiently large $T$ and a universal constant $c > 0$ such that:
+    \begin{align*}
+        d_{\vect{\alpha}}\lval(\vect{w}_T, \vect{\alpha}) \hat{d}_{\vect{\alpha}}\lval(\vect{w}_T, \vect{\alpha}; \gamma)^\top \geq c \|d_{\vect{\alpha}}\lval(\vect{w}_T, \vect{\alpha})\|_2^2.
+    \end{align*}
+\end{theorem}
+
+\begin{proof}
+Define $\vect{g}_j := \nabla_{\vect{w}_j}\lval(\vect{w}_j, \vect{\alpha})$ for $j \in \{1, \ldots, T\}$.
+    Write down the dot product taking into account that $\prod_{k=t+1}^{T}\vect{A}_k = (1 - \eta)^{T-t}$ according to \ref{asn:spec}(1):
+    \begin{align*}
+         d_{\vect{\alpha}}\lval(\vect{w}_T, \vect{\alpha}) \hat{d}_{\vect{\alpha}}\lval(\vect{w}_T, \vect{\alpha}; \gamma)^\top &= 
+         \sum_{j=1}^T\sum_{t=1}^T (1 - \eta)^{2T - t - j}\nabla_{\vect{w}_T}\lval(\vect{w}_T, \vect{\alpha})\vect{B}_t\vect{B}_j^\top\nabla_{\vect{w}_j}\lval(\vect{w}_j, \vect{\alpha})^\top \\
+        &= \sum_{j=1}^T\sum_{t=1}^T(1 - \eta)^{2T - j - t}\vect{g}_T\vect{B}_t\vect{B}_j^\top\vect{g}_j.
+    \end{align*}
+    Now estimate each term from below
+    \begin{align*}
+        \vect{g}_T\vect{B}_t\vect{B}_j^\top\vect{g}_j &= \vect{g}_T\vect{B}_t\vect{B}_t^\top\vect{g}_j + \vect{g}_T\vect{B}_t(\vect{B}_j - \vect{B}_t)^\top\vect{g}_j \\
+        &\stackrel{\ref{asn:std}(2)}{\geq} \vect{g}_T\vect{B}_t\vect{B}_t^\top\vect{g}_j - C_B\|\vect{w}_j - \vect{w}_t\|_2\cdot\|\vect{g}_j\|_2\cdot\|\vect{g}_T\|_2\cdot\|\vect{B}_t\|_\text{op} \\
+        &\stackrel{\ref{asn:spec}(4), \ref{asn:std}(3)}{\geq} \vect{g}_T\vect{B}_t\vect{B}_t^\top\vect{g}_j  - C_BB\|\vect{w}_j - \vect{w}_t\|_2\cdot\|\vect{g}_j - \nabla_{\vect{w}_2^*}\lval(\vect{w}_2^*, \vect{\alpha})\|_2\cdot \|\vect{g}_T\|_2 \\
+        &\stackrel{\ref{asn:std}(1)}{\geq} \vect{g}_T\vect{B}_t\vect{B}_t^\top\vect{g}_j  - C_BB\|\vect{w}_j - \vect{w}_t\|_2\cdot L\|\vect{w}_j - \vect{w}_2^*\|_2\cdot \|\vect{g}_T\|_2 \\
+        &\geq \vect{g}_T\vect{B}_t\vect{B}_t^\top\vect{g}_j  - C_BBLD\|\vect{w}_j - \vect{w}_\infty + \vect{w}_\infty - \vect{w}_t\|_2\|\vect{g}_T\|_2 \\
+        &\stackrel{\eqref{eq:lemma_conv}}{\geq} \vect{g}_T\vect{B}_t\vect{B}_t^\top\vect{g}_j  - C_BBLD(\|\vect{w}_0 - \vect{w}_\infty\|_2e^{-\eta t} + \|\vect{w}_0 - \vect{w}_\infty\|_2e^{-\eta j})\|\vect{g}_T\|_2 \\
+        &\stackrel{\ref{asn:std}(4)}{\geq}\vect{g}_T\vect{B}_t\vect{B}_t^\top\vect{g}_j  - C_BBLD^2(e^{-\eta t} + e^{-\eta j})\|\vect{g}_T\|_2 
+    \end{align*}
+    Now bound $\vect{g}_T\vect{B}_t\vect{B}_t^\top\vect{g}_j$ from below:
+    \begin{align*}
+        \vect{g}_T\vect{B}_t\vect{B}_t^\top\vect{g}_j &= \vect{g}_T\vect{B}_t\vect{B}_t^\top\vect{g}_T + \vect{g}_T\vect{B}_t\vect{B}_t^\top(\vect{g}_j - \vect{g}_T) \\
+        &\stackrel{\ref{asn:std}(1)(3)}{\geq} \kappa\|\vect{g}_T\|^2_2 - L\|\vect{g}_T\|_2B^2\|\vect{w}_j - \vect{w}_T\|_2 \\
+        &\stackrel{\eqref{eq:lemma_conv}}{\geq} \kappa\|\vect{g}_T\|^2_2 - L\|\vect{g}_T\|_2B^2\|\vect{w}_0 - \vect{w}_\infty\|_2(e^{-\eta T} + e^{-\eta j}) \\
+        &\stackrel{\ref{asn:std}(4)}{\geq}\kappa\|\vect{g}_T\|^2_2 - LDB^2\|\vect{g}_T\|_2(e^{-\eta T} + e^{-\eta j}).
+    \end{align*}
+    Combining together the above bounds, we have:
+    \begin{align*}
+        &\sum_{j=1}^T\sum_{t=1}^T(1 - \eta)^{2T - j - t}\vect{g}_T\vect{B}_t\vect{B}_j^\top\vect{g}_j \geq \\
+        &\kappa T^2\|\vect{g}_T\|^2_2 - C_BBLD^2\|\vect{g}_T\|_2\sum_{j=1}^T\sum_{t=1}^T[e^{-\eta t} + e^{-\eta j}] - LDB^2\|\vect{g}_T\|_2(T^2e^{-\eta T} + T\sum_{j=1}^Te^{-\eta j}) \geq \\
+        &\kappa T^2\|\vect{g}_T\|^2_2 - 2C_BBLD^2\|\vect{g}_T\|_2T(e^\eta - 1)^{-1}- LDB^2\|\vect{g}_T\|_2(T^2e^{-\eta T} + T\eta^{-1}) \geq \\
+        &\kappa T^2\|\vect{g}_T\|^2_2 - 2C_BBLD^2\|\vect{g}_T\|_2T(e^\eta - 1)^{-1} - LDB^2\|\vect{g}_T\|_2(T^2e^{-\eta T} + T(e^\eta - 1)^{-1}).
+    \end{align*}
+    Using Lemma \ref{lamma:bound_grad} we make the following statement.
+    Since the first term of the bound is $\Theta(T^2)$ and the second and the third are $\Theta(T)$, then there exists sufficiently large $T$ and a universal constant $c$ such that the expression is bounded from below with $c\|\vect{g}_T\|^2_2$ for $\|\vect{g}_T\|_2 \geq \mu\delta$. 
+\end{proof}

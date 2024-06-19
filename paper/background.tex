@@ -1,0 +1,26 @@
+\section{Background}
+In this section we introduce a derivation of an exact hypergradient computation.
+
+\subsection{Hypergradient computation}
+Given a vector of model parameters $\vect{w} \in \mathbb{R}^P$ and a vector of hyperparameters $\vect{\alpha} \in \mathbb{R}^H$. The dynamic of model parameters $\{\vect{w}_t\}_{t=0}^{T}$ for some $T \in \mathbb{N}$ and some $\vect{\alpha}$ is defined as follows $\vect{w}_{t+1} = \vect{\Phi}(\vect{w}_t, \vect{\alpha})$, where $\vect{\Phi}(., .)$ is a smooth mapping. For instance, a vanilla gradient descent with stepsize $\eta > 0$ could be written as $\vect{\Phi}(\vect{w}_t, \vect{\alpha}) = \vect{w}_t - \eta\nabla_{\vect{w}}\mathcal{L}_\text{train}(\vect{w}_t, \vect{\alpha})$, where $\mathcal{L}_\text{train}$ is a training loss function. Given also a differentiable validation loss function $\mathcal{L}_\text{val}(\vect{w}, \vect{\alpha})$. Under the notations above we formulate a hyperparameter optimization problem as follows:
+\begin{align}
+    &\vect{\alpha}^* - \arg\min_{\vect{\alpha} \in \mathbb{R}^H}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha}),\\
+    &\mathrm{s.t.} \quad \vect{w}_{t} = \vect{\Phi}(\vect{w}_{t-1}, \vect{\alpha}), \quad t \in \overline{1, T}.
+\end{align}
+Now the goal is to derive a hypergdadient $d_{\vect{\alpha}}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha})$, viewing $\vect{w}_T$ as a function of $\vect{\alpha}$:
+\begin{align}
+    d_{\vect{\alpha}}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha}) = \nabla_{\vect{\alpha}}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha}) + \nabla_{\vect{w}_T}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha})\frac{d\vect{w}_T}{d\vect{\alpha}}.
+\end{align}
+Here $\nabla_{\vect{\alpha}}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha})$ is a row-vector.
+The chain rule suggests that $d\vect{w}_T/d\vect{\alpha}$ is computed in the following way \cite{franceschi2017forward}:
+
+\begin{align}\label{eq:exact_dw_da}
+    \frac{d\vect{w}_T}{d\vect{\alpha}} = \sum_{t=1}^T\left(\prod_{k=t+1}^T\vect{A}_k\right)\vect{B}_t, \quad \vect{A}_k = \frac{\partial\vect{\Phi}(\vect{w}_{k-1}, \vect{\alpha})}{\partial\vect{w}_{k-1}}, \quad \vect{B}_t = \frac{\partial\vect{\Phi}(\vect{w}_{t-1}, \vect{\alpha})}{\partial\vect{\alpha}}.
+\end{align}
+
+Therefore, the hypergradient is calculated as follows:
+\begin{align}\label{eq:hypergrad_full}
+    d_{\vect{\alpha}}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha}) = \nabla_{\vect{\alpha}}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha}) + \sum_{t=1}^T \nabla_{\vect{w}_T}\mathcal{L}_\text{val}(\vect{w}_T, \vect{\alpha})\left(\prod_{k=t+1}^T\vect{A}_k\right)\vect{B}_t.
+\end{align}
+
+The computation of \eqref{eq:exact_dw_da} could be implemented with a Reverse-Mode Differentiation (RMD) or Forward-Mode Differentiation (FMD) \cite{franceschi2017forward}. However, the aforementioned method is computationally expensive in terms of either latency (FMD) or memory (RMD). Note that RMD may not need to store the trajectory $\vect{w}_1, \ldots, \vect{w}_T$ in case of SGD with momentum. However, this would require $2T - 1$ Jacobian-vector products (JVPs), which is computationally demanding. So, we develop the method that performs only $T$ JVPs for the hypergradient computation.

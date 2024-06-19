@@ -1,0 +1,53 @@
+\documentclass[14pt]{extarticle}
+
+\input{preamble}
+
+\begin{document}
+
+%%% Титульный лист
+\input{title}
+\setcounter{page}{2}
+
+%%% Аннотация
+\newpage
+\input{abstract}
+
+%%% Оглавление
+\newpage
+\tableofcontents
+
+%%% Введение
+\newpage
+\input{introduction}
+
+
+%%% related work
+\clearpage
+\input{related_work}
+
+%%% Постановка задачи
+\clearpage
+\input{background}
+
+%%% Основная часть
+\newpage
+\input{method}
+
+%%% Эксперименты
+\newpage
+\input{experiments}
+
+%%% Заключение
+\newpage
+\input{conclusion}
+
+%%% Список литературы
+\newpage
+\input{references}
+
+% %%% Приложение
+% \newpage
+% \appendix
+% \input{sections/8_appendix}
+
+\end{document}
