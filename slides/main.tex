@@ -117,8 +117,8 @@
   \item Пусть задан вектор параметров модели $\mathbf{w} \in \mathbb{R}^p$ и вектор гиперпараметров
   $\boldsymbol{\alpha} \in \mathbb{R}^h$. Задача оптимизации:
   \begin{align*}
-    \boldsymbol{\alpha}^* &= \arg\min_{\boldsymbol{\alpha}}\mathcal{L}_2(\mathbf{w}^*, \boldsymbol{\alpha}), \\
-    \mathrm{s.t.} \quad \mathbf{w}^* &= \arg\min_{\mathbf{w}}\mathcal{L}_1(\mathbf{w}, \boldsymbol{\alpha}).
+    \boldsymbol{\alpha}^* &= \arg\min_{\boldsymbol{\alpha}}\lval(\mathbf{w}^*, \boldsymbol{\alpha}), \\
+    \mathrm{s.t.} \quad \mathbf{w}^* &= \arg\min_{\mathbf{w}}\ltrn(\mathbf{w}, \boldsymbol{\alpha}).
   \end{align*}
   \item Пусть внутренняя задача решается с помощью оптимизатора $\mathbf{\Phi}(., .)$:
   \begin{align*}
