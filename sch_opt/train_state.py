@@ -59,7 +59,9 @@ class SchTrainState(struct.PyTreeNode):
     def apply_h_gradients(self, *, h_grads, **kwargs):
         updates, new_out_state = self.outer_opt.update(h_grads, self.outer_opt_state, self.h_params)
         new_params = optax.apply_updates(self.h_params, updates)
-        self.inner_opt_state[-1].hyperparams['learning_rate'] = new_params
+        self.inner_opt_state[-1].hyperparams['learning_rate'] = SchTrainState.lr_schedule(self.step,
+                                                                                          new_params['alpha_0'],
+                                                                                          new_params['beta'])
         return self.replace(
             step=self.step + 1,
             h_params=new_params,
@@ -67,14 +69,18 @@ class SchTrainState(struct.PyTreeNode):
             **kwargs
         )
     
+    @staticmethod
+    def lr_schedule(count, alpha_0, beta):
+        return alpha_0 / (1 + count / 5000) ** beta
+    
 
 def create_train_state(module, rng, learning_rate=0.1, momentum=0.9, w_decay=3e-4,
                                alpha_lr=1e-4, alpha_decay=1e-4, input_shape=[28, 28, 1]):
     """Creates an initial `TrainState`."""
     w_params, bn_state = module.init(rng, jnp.ones([1] + input_shape), True)
-    h_params = learning_rate
+    h_params = {'alpha_0': learning_rate, 'beta': 1.0}
     tx_inner = optax.chain(optax.add_decayed_weights(w_decay),
-                           optax.inject_hyperparams(optax.sgd)(learning_rate=h_params,
+                           optax.inject_hyperparams(optax.sgd)(learning_rate=learning_rate,
                                                                momentum=momentum))
     tx_outer = optax.chain(optax.add_decayed_weights(alpha_decay),
                            optax.adam(alpha_lr, b1=0.5, b2=0.999))

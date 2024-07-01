@@ -13,6 +13,7 @@ def loss_fn(w_params, state: SchTrainState, batch, is_training=True):
         logits=logits, labels=batch['label']).mean()
     return loss, state.replace(bn_state=bn_state)
 
+
 @jax.jit
 def loss_fn_val_grad_params(w_params, state, batch):
     # is_training is always True
@@ -35,7 +36,7 @@ def compute_metrics(*, state, batch):
 
 
 @jax.jit
-def inner_step(state: SchTrainState, batch):    
+def inner_step(state: SchTrainState, batch):
     grad_fn = jax.value_and_grad(loss_fn, argnums=0, has_aux=True)
     (_, state), grads = grad_fn(state.w_params, state, batch, True)
     state = state.apply_w_gradients(w_grads=grads)
@@ -43,11 +44,16 @@ def inner_step(state: SchTrainState, batch):
 
 
 @jax.jit
-def B_jvp(w_params, batch, state, v):
+def B_jvp(w_params, batch, state: SchTrainState, v):
     dl_trn_dw = loss_fn_trn_grad_params(w_params, state, batch)
-    return -jax.tree_util.tree_reduce(lambda x, y: x + y,
-                                      jax.tree_util.tree_map(lambda x, y: (x * y).sum(), dl_trn_dw, v),
-                                      initializer=0.0)
+    grad_fn_h = jax.grad(lambda h: state.lr_schedule(
+        state.step, h['alpha_0'], h['beta']))
+    eta_grad = grad_fn_h(state.h_params)
+    dot_prod = -jax.tree_util.tree_reduce(lambda x, y: x + y,
+                                         jax.tree_util.tree_map(
+                                             lambda x, y: (x * y).sum(), dl_trn_dw, v),
+                                         initializer=0.0)
+    return jax.tree_util.tree_map(lambda x: dot_prod * x, eta_grad)
 
 
 def proposed_so_grad(state, batches, val_batch, gamma):
