@@ -81,7 +81,8 @@ def main():
     distil_label = np.arange(n_cls).repeat(args.data_size)
     distil_batch = {'image': distil_imgs, 'label': distil_label}
 
-    outer_opt = optax.adam(args.outer_lr)
+    # outer_opt = optax.adam(args.outer_lr)
+    outer_opt = optax.sgd(args.outer_lr, momentum=0.5)
     out_state = outer_opt.init(distil_imgs)
 
     method, m_params = parse_method(args.method)

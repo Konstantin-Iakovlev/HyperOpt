@@ -55,7 +55,7 @@ def B_jvp(params, batch, state, v, r=1e-2):
     dl_dlam = jax.grad(fun, argnums=1, has_aux=True)
     g_plus = dl_dlam(w_plus, batch['image'])[0]
     g_minus = dl_dlam(w_minus, batch['image'])[0]
-    return -state.lr * (g_plus - g_minus) / (2 * 1e-7)
+    return -state.lr * (g_plus - g_minus) / (2 * eps)
 
 
 @jax.jit
@@ -65,8 +65,7 @@ def A_jvp(params, batch, state, v, r=1e-2):
     w_minus = jax.tree_util.tree_map(lambda x, y: x - eps * y, params, v)
     g_plus = loss_fn_grad_params(w_plus, state, batch)
     g_minus = loss_fn_grad_params(w_minus, state, batch)
-    hvp = jax.tree_util.tree_map(lambda x, y: (
-        x - y) / (2 * 1e-7), g_plus, g_minus)
+    hvp = jax.tree_util.tree_map(lambda x, y: (x - y) / (2 * eps), g_plus, g_minus)
     return jax.tree_util.tree_map(lambda x, y: x - state.lr * y, v, hvp)
 
 
