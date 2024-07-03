@@ -86,9 +86,9 @@ def main():
     out_state = outer_opt.init(distil_imgs)
 
     method, m_params = parse_method(args.method)
+    state = create_train_state(conv_net, jax.random.PRNGKey(seed), args.T * args.outer_steps, args.inner_lr,
+                               inp_shape=name_to_shape[args.dataset])
     for outer_step in tqdm(range(args.outer_steps)):
-        state = create_train_state(conv_net, jax.random.PRNGKey(seed + outer_step), args.T * args.outer_steps, args.inner_lr,
-                                   inp_shape=name_to_shape[args.dataset])
         x, y = next(iter(valloader))
         val_batch = {'image': x, 'label': y,
                      'lambda': jnp.zeros((y.shape[0],))}
