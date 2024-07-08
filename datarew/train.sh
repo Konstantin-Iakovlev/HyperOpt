@@ -11,6 +11,6 @@ do
     python train.py --seed ${seed} --imb_fact 50 \
     --method ${method} \
     --T 10 --outer_steps 1001 --dataset cifar10 --data_size 1_000_000 \
-    --outer_lr 1e-5 --wnet_hidden 100 --val_freq 100 --backbone WideResNet \
+    --outer_lr 1e-1 --wnet_hidden 100 --val_freq 100 --backbone WideResNet \
     --inner_lr 1e-2
 done
