@@ -75,8 +75,8 @@ class DataWTrainState(struct.PyTreeNode):
         return self.scheduler(self.step)
         
 
-def create_dw_train_state(module, wnet, rng, inner_steps, learning_rate=0.025, momentum=0.9, w_decay=3e-4,
-                               alpha_lr=1e-4, alpha_decay=1e-4, input_shape=[28, 28, 1]):
+def create_dw_train_state(module, wnet, rng, inner_steps, learning_rate=0.025, momentum=0.9, w_decay=0.0,
+                               alpha_lr=1e-4, alpha_decay=0.0, input_shape=[28, 28, 1]):
     """Creates an initial `TrainState`."""
     w_params, bn_state = module.init(rng, jnp.ones([1] + input_shape), True)
     h_params = wnet.init(rng, jnp.ones([32, 1]))

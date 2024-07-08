@@ -8,9 +8,9 @@ method=baseline
 
 for seed in 0 1 2 3 4
 do
-    python train.py --seed ${seed} --imb_fact 10 \
+    python train.py --seed ${seed} --imb_fact 50 \
     --method ${method} \
-    --T 5 --outer_steps 2001 --dataset cifar10 --data_size 1_000_000 \
-    --outer_lr 1e-5 --wnet_hidden 128 --val_freq 100 --backbone ResNet34 \
-    --inner_lr 1e-1
+    --T 10 --outer_steps 1001 --dataset cifar10 --data_size 1_000_000 \
+    --outer_lr 1e-5 --wnet_hidden 100 --val_freq 100 --backbone WideResNet \
+    --inner_lr 1e-2
 done
