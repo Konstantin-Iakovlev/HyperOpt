@@ -81,8 +81,7 @@ def main():
     distil_label = np.arange(n_cls).repeat(args.data_size)
     distil_batch = {'image': distil_imgs, 'label': distil_label}
 
-    # outer_opt = optax.adam(args.outer_lr)
-    outer_opt = optax.sgd(args.outer_lr, momentum=0.5)
+    outer_opt = optax.adam(args.outer_lr)
     out_state = outer_opt.init(distil_imgs)
 
     method, m_params = parse_method(args.method)
@@ -90,8 +89,7 @@ def main():
                                inp_shape=name_to_shape[args.dataset])
     for outer_step in tqdm(range(args.outer_steps)):
         x, y = next(iter(valloader))
-        val_batch = {'image': x, 'label': y,
-                     'lambda': jnp.zeros((y.shape[0],))}
+        val_batch = {'image': x, 'label': y}
         if method == 'proposed':
             state, g_so = proposed_so_grad(state, distil_batch, val_batch, m_params, args.T)
         elif method == 'DrMAD':

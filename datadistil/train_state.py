@@ -58,7 +58,7 @@ class DataCleanTrainState(struct.PyTreeNode):
         return self.scheduler(self.step)
 
 
-def create_train_state(module, rng, inner_steps, learning_rate=0.1, momentum=0.9, decay=3e-4, inp_shape=[32, 32, 3]):
+def create_train_state(module, rng, inner_steps, learning_rate=0.1, momentum=0.0, decay=0.0, inp_shape=[32, 32, 3]):
     """Creates an initial `TrainState`."""
     try:
         params, bn_state = module.init(rng, jnp.ones([1, *inp_shape]), True)
