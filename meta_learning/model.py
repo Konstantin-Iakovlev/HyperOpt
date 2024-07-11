@@ -15,17 +15,17 @@ class CNN(hk.Module):
         x = self.conv1(x_batch)
         x = hk.BatchNorm(False, False, 0.9)(x, is_training)
         x = jax.nn.relu(x)
-        x = hk.avg_pool(x, window_shape=(2, 2), strides=(2, 2), padding='VALID')
+        x = hk.avg_pool(x, window_shape=2, strides=2, padding='VALID')
         
         x = self.conv2(x)
         x = hk.BatchNorm(False, False, 0.9)(x, is_training)
         x = jax.nn.relu(x)
-        x = hk.avg_pool(x, window_shape=(2, 2), strides=(2, 2), padding='VALID')
+        x = hk.avg_pool(x, window_shape=2, strides=2, padding='VALID')
 
         x = self.conv3(x)
         x = hk.BatchNorm(False, False, 0.9)(x, is_training)
         x = jax.nn.relu(x)
-        x = hk.avg_pool(x, window_shape=(2, 2), strides=(2, 2), padding='VALID')
+        x = hk.avg_pool(x, window_shape=2, strides=2, padding='VALID')
         
         x = self.flatten(x)
         x = self.logits(x)
