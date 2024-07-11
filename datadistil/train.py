@@ -41,7 +41,7 @@ def main():
     parser = ArgumentParser()
     parser.add_argument('--seed', type=int, required=True, default=0)
     parser.add_argument('--T', type=int, required=False, default=20)
-    parser.add_argument('--batch_size', type=int, required=False, default=128)
+    parser.add_argument('--batch_size', type=int, required=False, default=1024)
     parser.add_argument('--data_size', type=int, required=False, default=1)
     parser.add_argument('--outer_steps', type=int, required=False, default=1000)
     parser.add_argument('--method', type=str, required=True, default='proposed_0.999')
@@ -74,7 +74,7 @@ def main():
     seed = args.seed
     np.random.seed(seed)
     torch.manual_seed(seed)
-    _, valloader, testloader = get_dataloaders(args.batch_size, args.dataset)
+    valloader, testloader = get_dataloaders(args.batch_size, args.dataset)
 
     # create a distilled dataset
     distil_imgs = np.random.randn(n_cls * args.data_size, *name_to_shape[args.dataset])

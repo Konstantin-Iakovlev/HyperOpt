@@ -67,12 +67,9 @@ def get_dataloaders(batch_size, ds_name='cifar10'):
     np.random.seed(0)
     ds_cls = name_to_cls[ds_name]
     train_data = ds_cls(root='./data', train=True, download=True, transform=train_transform)
-    ids = np.random.choice(len(train_data), size=(len(train_data),), replace=False)
-    train_data = DataCleaningDS([train_data[i] for i in ids])
     trainloader = DataLoader(train_data, batch_size=batch_size, shuffle=True, drop_last=True, collate_fn=numpy_collate)
 
     test_data = ds_cls(root='./data', train=False, download=True, transform=train_transform)
     testloader = DataLoader(test_data, batch_size=batch_size, shuffle=False, drop_last=False, collate_fn=numpy_collate)
-    valloader = DataLoader(test_data, batch_size=batch_size, shuffle=True, drop_last=True, collate_fn=numpy_collate)
-    return trainloader, valloader, testloader
+    return trainloader, testloader
 
