@@ -78,6 +78,15 @@ def main():
 
     # create a distilled dataset
     distil_imgs = np.random.randn(n_cls * args.data_size, *name_to_shape[args.dataset])
+    is_filled = [False] * n_cls
+    # init with true data
+    for x, y in valloader:
+        if all(is_filled):
+            break
+        for b in range(y.shape[0]):
+            if not is_filled[y[b]]:
+                distil_imgs[y[b] * args.data_size: (y[b] + 1) * args.data_size] = x[b][None].repeat(args.data_size, axis=0)
+
     distil_label = np.arange(n_cls).repeat(args.data_size)
     distil_batch = {'image': distil_imgs, 'label': distil_label}
 
