@@ -69,7 +69,7 @@ def main():
     meta_grad = jax.tree_util.tree_map(jnp.zeros_like, state.h_params)
     for outer_step in tqdm(range(args.meta_batch_size * args.outer_steps)):
         params, _ = conv_net.init(jax.random.PRNGKey(seed), jnp.ones([1, 32, 32, 3]), True)
-        w_params, _ = hk.data_structures.partition(lambda m, n, p: 'logits' in m, params)
+        w_params, _ = hk.data_structures.partition(lambda m, n, p: 'logits' in m or m.endswith('2_d'), params)
         inn_state = state.inner_opt.init(w_params)
         state = state.replace(w_params=w_params, inner_opt_state=inn_state)
         
@@ -101,9 +101,9 @@ def main():
 
         # eval
         if outer_step % (args.val_freq * args.meta_batch_size) == 0 and outer_step > 0:
-            for _ in range(100):
+            for _ in range(5):
                 params, _ = conv_net.init(jax.random.PRNGKey(seed), jnp.ones([1, 32, 32, 3]), True)
-                w_params, _ = hk.data_structures.partition(lambda m, n, p: 'logits' in m, params)
+                w_params, _ = hk.data_structures.partition(lambda m, n, p: 'logits' in m or m.endswith('2_d'), params)
                 inn_state = state.inner_opt.init(w_params)
                 state = state.replace(w_params=w_params, inner_opt_state=inn_state)
 
@@ -118,6 +118,7 @@ def main():
 
     acc_arr = np.stack([metrics_history[s]['test_accuracy'] for s in [seed]], axis=0)
     print('Finished with', acc_arr.max(-1))
+    print(acc_arr)
     with open(f'{args.method}_{seed}.json', 'w') as f:
         f.write(json.dumps({seed: float(acc_arr.max(-1).item())}))
 

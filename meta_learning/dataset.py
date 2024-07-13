@@ -30,7 +30,7 @@ class DataGenerator:
         ds_val = []
         raw_ds = self.trn_cls_to_obj if train else self.test_cls_to_obj
         for c in cls_to_prep:
-            ids = np.random.choice(len(raw_ds[c]), 2 * self.n_shots, replace=False)
+            ids = np.random.choice(len(raw_ds[c]), self.n_shots + 20, replace=False)
             ds_trn.extend([(raw_ds[c][idx], cls_map[c]) for idx in ids[:self.n_shots]])
             ds_val.extend([(raw_ds[c][idx], cls_map[c]) for idx in ids[self.n_shots:]])
         return self._prep_ds(ds_trn), self._prep_ds(ds_val)

@@ -1,8 +1,8 @@
-# method=fo
+method=fo
 # method=proposed_0.99
 # method=proposed_0.9
-# method=IFT_2
-method=luketina
+# method=IFT_3
+# method=luketina
 
 #export XLA_FLAGS="--xla_gpu_strict_conv_algorithm_picker=false"
 
@@ -11,11 +11,11 @@ do
     python train.py --seed ${seed} \
     --backbone CNN \
     --method ${method} \
-    --num_ways 5 --num_shots 10 \
-    --train_classes 50 \
-    --val_classes 50 \
-    --T 10 --outer_steps 201 \
-    --meta_batch_size 10 \
-    --outer_lr 1e-3 --val_freq 20 \
+    --num_ways 2 --num_shots 80 \
+    --train_classes 70 \
+    --val_classes 30 \
+    --T 50 --outer_steps 101 \
+    --meta_batch_size 4 \
+    --outer_lr 1e-3 --val_freq 10 \
     --inner_lr 1e-1
 done
