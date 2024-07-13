@@ -67,7 +67,7 @@ class BiLevelTrainState(struct.PyTreeNode):
         )
 
 
-def create_bilevel_train_state(module, rng, learning_rate, outer_lr, momentum=0.9, weight_decay=0.0):
+def create_bilevel_train_state(module, rng, learning_rate, outer_lr, momentum=0.9, weight_decay=0.0, out_steps=1000):
     """Creates an initial `TrainState`."""
     params, bn_state = module.init(rng, jnp.ones([1, 32, 32, 3]), True)
     w_params, h_params = hk.data_structures.partition(
@@ -76,8 +76,7 @@ def create_bilevel_train_state(module, rng, learning_rate, outer_lr, momentum=0.
     print(h_params.keys())
     tx_inner = optax.chain(optax.add_decayed_weights(weight_decay),
                            optax.sgd(learning_rate, momentum=momentum))
-    # tx_outer = optax.adam(outer_lr)
-    tx_outer = optax.sgd(outer_lr, momentum=0.9)
+    tx_outer = optax.sgd(optax.linear_schedule(outer_lr, 0, out_steps), momentum=0.9)
     return BiLevelTrainState.create(
         apply_fn=module.apply, w_params=w_params, h_params=h_params,
         inner_opt=tx_inner, outer_opt=tx_outer, bn_state=bn_state,

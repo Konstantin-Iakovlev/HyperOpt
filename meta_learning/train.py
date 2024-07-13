@@ -64,7 +64,7 @@ def main():
     method, m_params = parse_method(args.method)
 
     state = create_bilevel_train_state(conv_net, jax.random.PRNGKey(seed),
-                                       args.inner_lr, args.outer_lr)
+                                       args.inner_lr, args.outer_lr, out_steps=args.outer_steps)
     
     meta_grad = jax.tree_util.tree_map(jnp.zeros_like, state.h_params)
     for outer_step in tqdm(range(args.meta_batch_size * args.outer_steps)):
@@ -101,7 +101,7 @@ def main():
 
         # eval
         if outer_step % (args.val_freq * args.meta_batch_size) == 0 and outer_step > 0:
-            for _ in range(5):
+            for _ in range(50):
                 params, _ = conv_net.init(jax.random.PRNGKey(seed), jnp.ones([1, 32, 32, 3]), True)
                 w_params, _ = hk.data_structures.partition(lambda m, n, p: 'warp' not in m, params)
                 inn_state = state.inner_opt.init(w_params)
