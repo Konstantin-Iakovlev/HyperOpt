@@ -71,7 +71,7 @@ def create_bilevel_train_state(module, rng, learning_rate, outer_lr, momentum=0.
     """Creates an initial `TrainState`."""
     params, bn_state = module.init(rng, jnp.ones([1, 32, 32, 3]), True)
     w_params, h_params = hk.data_structures.partition(
-        lambda m, n, p: 'logits' in m or m.endswith('2_d'), params)
+        lambda m, n, p: 'warp' not in m, params)
     print(w_params.keys())
     print(h_params.keys())
     tx_inner = optax.chain(optax.add_decayed_weights(weight_decay),
