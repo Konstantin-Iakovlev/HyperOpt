@@ -14,7 +14,7 @@ do
     --num_ways 2 --num_shots 80 \
     --train_classes 70 \
     --val_classes 30 \
-    --T 50 --outer_steps 1001 \
+    --T 20 --outer_steps 1001 \
     --meta_batch_size 4 \
     --outer_lr 1e-3 --val_freq 100 \
     --inner_lr 1e-1
