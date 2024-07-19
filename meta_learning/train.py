@@ -41,6 +41,7 @@ def main():
     parser.add_argument('--num_ways', type=int, required=True, default=5)
     parser.add_argument('--num_shots', type=int, required=True, default=1)
     parser.add_argument('--T', type=int, required=False, default=10)
+    parser.add_argument('--batch_size', type=int, required=False, default=128)
     parser.add_argument('--meta_batch_size', type=int, required=False, default=4)
     parser.add_argument('--outer_steps', type=int, required=False, default=1000)
     parser.add_argument('--method', type=str, required=True, default='proposed_0.999')
@@ -60,7 +61,8 @@ def main():
     torch.manual_seed(seed)
 
     trainset, testset = prepare_datasets()
-    data_gen = DataGenerator(trainset, testset, args.num_ways, args.num_shots, args.train_classes, args.val_classes)
+    data_gen = DataGenerator(trainset, testset, args.num_ways, args.num_shots, args.train_classes, args.val_classes,
+                             batch_size=args.batch_size)
     method, m_params = parse_method(args.method)
 
     state = create_bilevel_train_state(conv_net, jax.random.PRNGKey(seed),
@@ -73,22 +75,19 @@ def main():
         inn_state = state.inner_opt.init(w_params)
         state = state.replace(w_params=w_params, inner_opt_state=inn_state)
         
-        ds_trn, ds_val = data_gen.get_datasets()
+        dl_trn, ds_val = data_gen.get_datasets()
     
         val_batch = ds_val
-        batches = [ds_trn] * args.T
         if method == 'proposed':
-            state, g_so = proposed_so_grad(state, batches, val_batch, m_params)
+            state, g_so = proposed_so_grad(state, dl_trn, val_batch, m_params, args.T)
         elif method == 'fo':
-            for batch in batches:
-                state = inner_step(state, batch)
+            for _ in range(args.T):
+                state = inner_step(state, next(iter(dl_trn)))
             g_so = jax.tree_util.tree_map(jnp.zeros_like, state.h_params)
         elif method == 'IFT':
-            state, g_so = IFT_grad(state, batches, val_batch, m_params)
+            state, g_so = IFT_grad(state, dl_trn, val_batch, m_params, args.T)
         elif method == 'luketina':
-            state, g_so = luketina_so_grad(state, batches, val_batch)
-        elif method == 'DrMAD':
-            state, g_so = drmad_grad(state, batches, val_batch)
+            state, g_so = luketina_so_grad(state, dl_trn, val_batch, args.T)
         else:
             raise ValueError('Unknown ' + method)
 
@@ -107,9 +106,9 @@ def main():
                 inn_state = state.inner_opt.init(w_params)
                 state = state.replace(w_params=w_params, inner_opt_state=inn_state)
 
-                ds_trn, ds_val = data_gen.get_datasets(False)
+                dl_trn, ds_val = data_gen.get_datasets(False)
                 for _ in range(args.T):
-                    state = inner_step(state, ds_trn)
+                    state = inner_step(state, next(iter(dl_trn)))
                 state = compute_metrics(state=state, batch=ds_val)
                 
             for metric,value in state.metrics.compute().items():

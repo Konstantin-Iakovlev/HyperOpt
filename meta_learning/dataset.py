@@ -1,12 +1,14 @@
 import numpy as np
 import torchvision
 from torchvision import transforms
+from torch.utils.data import DataLoader
 
 
 class DataGenerator:
     def __init__(self, trn_set, test_set, n_way, n_shots, num_trn_cls=50,
-                 num_val_cls=50, num_cls_total=100):
+                 num_val_cls=50, num_cls_total=100, batch_size=128):
         self.n_way = n_way
+        self.batch_size = batch_size
         ids = np.random.choice(num_cls_total, num_trn_cls + num_val_cls, replace=False)
         self.trn_cls_to_obj = {d: [] for d in ids[:num_trn_cls]}
         self.test_cls_to_obj = {d: [] for d in ids[num_trn_cls:]}
@@ -21,6 +23,9 @@ class DataGenerator:
     def _prep_ds(self, ds):
         return {'image': np.stack([b[0] for b in ds], axis=0),
                'label': np.stack([b[1] for b in ds], axis=0)}
+    
+    def _prep_dl(self, ds):
+        return DataLoader(ds, batch_size=self.batch_size, shuffle=True, drop_last=True, collate_fn=self._prep_ds)
 
     def get_datasets(self, train=True):
         cls_to_prep = np.random.choice(list(self.trn_cls_to_obj.keys() if train else self.test_cls_to_obj),
@@ -33,7 +38,7 @@ class DataGenerator:
             ids = np.random.choice(len(raw_ds[c]), self.n_shots + 20, replace=False)
             ds_trn.extend([(raw_ds[c][idx], cls_map[c]) for idx in ids[:self.n_shots]])
             ds_val.extend([(raw_ds[c][idx], cls_map[c]) for idx in ids[self.n_shots:]])
-        return self._prep_ds(ds_trn), self._prep_ds(ds_val)
+        return self._prep_dl(ds_trn), self._prep_ds(ds_val)
 
 
 def prepare_datasets():
