@@ -68,9 +68,7 @@ def fo_grad(state, val_batch):
     return jax.grad(loss_fn, argnums=1, has_aux=True)(state.w_params, state.h_params, state, val_batch)[0]
 
 
-def drmad_grad(state, batches, val_batch):
-    """T = len(batches)"""
-    T = len(batches)
+def drmad_grad(state, batches, val_batch, T):
     g_so = jax.tree_util.tree_map(jnp.zeros_like, state.h_params)
     w_0 = state.w_params
     for step, batch in enumerate(batches):
@@ -86,11 +84,11 @@ def drmad_grad(state, batches, val_batch):
     return state, g_so
 
 
-def proposed_so_grad(state, batches, val_batch, gamma):
+def proposed_so_grad(state, batches, val_batch, gamma, T):
     """T = len(batches)"""
     g_so = jax.tree_util.tree_map(jnp.zeros_like, state.h_params)
-    T = len(batches)
-    for step, batch in enumerate(batches):
+    for step in range(T):
+        batch = next(iter(batches))
         new_state = inner_step(state, batch)
         curr_alpha = jax.grad(loss_fn, argnums=0, has_aux=True)(new_state.w_params,
                                                                 state.h_params, state, val_batch)[0]
@@ -102,9 +100,9 @@ def proposed_so_grad(state, batches, val_batch, gamma):
     return state, g_so
 
 
-def luketina_so_grad(state: BiLevelTrainState, batches, val_batch):
-    T = len(batches)
-    for step, batch in enumerate(batches):
+def luketina_so_grad(state: BiLevelTrainState, batches, val_batch, T):
+    for step in range(T):
+        batch = next(iter(batches))
         new_state = inner_step(state, batch)
         if step == len(batches) - 1:
             curr_alpha = jax.grad(loss_fn, argnums=0, has_aux=True)(new_state.w_params,
@@ -114,9 +112,10 @@ def luketina_so_grad(state: BiLevelTrainState, batches, val_batch):
     return state, g_so
 
 
-def IFT_grad(state: BiLevelTrainState, batches, val_batch, N):
+def IFT_grad(state: BiLevelTrainState, batches, val_batch, N, T):
     """N + 1 - the number of terms from Neuman series. See (9) from i-DARTS; the number of online opt. steps"""
-    for step, batch in enumerate(batches):
+    for step in range(T):
+        batch = next(iter(batches))
         state = inner_step(state, batch)
     v = jax.grad(loss_fn, argnums=0, has_aux=True)(state.w_params, state.h_params, state, val_batch)[0]
     so_grad = B_jvp(state.w_params, state.h_params, batches[-1], state, v)
