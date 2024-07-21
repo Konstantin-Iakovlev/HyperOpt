@@ -7,16 +7,16 @@ class WarpLayer(hk.Module):
     def __init__(self, name=None):
         super().__init__(name)
         self.conv1 = hk.Conv2D(output_channels=32, kernel_shape=3, with_bias=False)
-        self.conv2 = hk.Conv2D(output_channels=32, kernel_shape=3, with_bias=False)
+        # self.conv2 = hk.Conv2D(output_channels=32, kernel_shape=3, with_bias=False)
     
     def __call__(self, x_batch, is_training=True):
         x = self.conv1(x_batch)
         x = hk.BatchNorm(True, True, 0.9)(x, is_training)
         x = jax.nn.relu(x)
 
-        x = self.conv2(x)
-        x = hk.BatchNorm(True, True, 0.9)(x, is_training)
-        x = jax.nn.relu(x)
+        # x = self.conv2(x)
+        # x = hk.BatchNorm(True, True, 0.9)(x, is_training)
+        # x = jax.nn.relu(x)
 
         return x
 
