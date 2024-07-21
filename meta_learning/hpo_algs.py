@@ -114,14 +114,14 @@ def luketina_so_grad(state: BiLevelTrainState, batches, val_batch, T):
 
 def IFT_grad(state: BiLevelTrainState, batches, val_batch, N, T):
     """N + 1 - the number of terms from Neuman series. See (9) from i-DARTS; the number of online opt. steps"""
-    for step in range(T):
+    for _ in range(T):
         batch = next(iter(batches))
         state = inner_step(state, batch)
     v = jax.grad(loss_fn, argnums=0, has_aux=True)(state.w_params, state.h_params, state, val_batch)[0]
-    so_grad = B_jvp(state.w_params, state.h_params, batches[-1], state, v)
+    so_grad = B_jvp(state.w_params, state.h_params, batch, state, v)
     for k in range(1, N + 1):
-        v = A_jvp(state.w_params, batches[-1], state, v)
-        hvp = B_jvp(state.w_params, state.h_params, batches[-1], state, v)
+        v = A_jvp(state.w_params, batch, state, v)
+        hvp = B_jvp(state.w_params, state.h_params, batch, state, v)
         so_grad = jax.tree_util.tree_map(
             lambda x, y: x + y, so_grad, hvp)
     return state, so_grad
