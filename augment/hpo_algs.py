@@ -6,11 +6,11 @@ import haiku as hk
 
 
 @jax.jit
-def loss_fn_trn(w_params, h_params, state: DataWTrainState, batch, is_training=True):
+def loss_fn_trn(w_params, h_params, state: DataWTrainState, batch):
     aug_img = state.wnet_fn(h_params, state.rng, batch['image'], state.rng)
     logits, bn_state = state.apply_fn(w_params, state.bn_state, state.rng,
                                           aug_img,
-                                          is_training)
+                                          True)
     loss = optax.softmax_cross_entropy_with_integer_labels(
         logits=logits, labels=batch['label'])
     return loss.mean(), state.replace(bn_state=bn_state)
@@ -64,8 +64,14 @@ def inner_step_baseline(state: DataWTrainState, batch):
 
 
 @jax.jit
-def B_jvp(w_params, h_params, batch, state, v, eps=1e-7):
+def normalize(v):
+    return jnp.sqrt(jax.tree_util.tree_reduce(lambda v, x: v + (x ** 2).sum(), v, 0))
+
+
+@jax.jit
+def B_jvp(w_params, h_params, batch, state, v, r=1e-2):
     """d^2 L1 / dl dw v"""
+    eps = r / normalize(v)
     w_plus = jax.tree_util.tree_map(lambda x, y: x + eps * y, w_params, v)
     w_minus = jax.tree_util.tree_map(lambda x, y: x - eps * y, w_params, v)
     dl_dlam = jax.grad(loss_fn_trn, argnums=1, has_aux=True)
@@ -76,7 +82,8 @@ def B_jvp(w_params, h_params, batch, state, v, eps=1e-7):
 
 
 @jax.jit
-def A_jvp(w_params, batch, state, v, eps=1e-7):
+def A_jvp(w_params, batch, state, v, r=1e-2):
+    eps = r / normalize(v)
     w_plus = jax.tree_util.tree_map(lambda x, y: x + eps * y, w_params, v)
     w_minus = jax.tree_util.tree_map(lambda x, y: x - eps * y, w_params, v)
     dl_dw = jax.grad(loss_fn_trn, argnums=0, has_aux=True)

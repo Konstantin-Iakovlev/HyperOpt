@@ -2,6 +2,7 @@ import torch
 import jax
 import jax.numpy as jnp
 import haiku as hk
+from haiku.nets import *
 from train_state import create_dw_train_state
 from model import CNN
 from unet import Unet
@@ -41,8 +42,8 @@ def main():
     parser.add_argument('--backbone', type=str, required=False, default='ResNet18')
     parser.add_argument('--dataset', type=str, required=False, default='cifar100')
     parser.add_argument('--inner_lr', type=float, required=False, default=1e-1)
-    parser.add_argument('--outer_lr', type=float, required=False, default=1e-2)
-    parser.add_argument('--val_freq', type=int, required=False, default=20)
+    parser.add_argument('--outer_lr', type=float, required=False, default=1e-3)
+    parser.add_argument('--val_freq', type=int, required=False, default=100)
     args = parser.parse_args()
 
     metrics_history = {seed: {'train_loss': [],
@@ -60,7 +61,7 @@ def main():
                     'svhn': [32, 32, 3],
                     'fmnist': [28, 28, 1]}
     n_cls = name_to_cls[args.dataset]
-    conv_net = hk.transform_with_state(lambda x, t: eval('hk.nets.' + args.backbone)(num_classes=n_cls)(x, t))
+    conv_net = hk.transform_with_state(lambda x, t: eval(args.backbone)(num_classes=n_cls)(x, t))
     unet = hk.transform(lambda x, r: Unet(name_to_shape[args.dataset][-1], 3)(x, r))
 
     seed = args.seed
@@ -111,6 +112,7 @@ def main():
                 metrics_history[seed][f'test_{metric}'].append(value.item())
             state = state.replace(metrics=state.metrics.empty())
     acc_arr = np.stack([metrics_history[s]['test_accuracy'] for s in [seed]], axis=0)
+    print(acc_arr)
     print('Finished with', acc_arr.max(-1))
     with open(f'{args.method}_{seed}.json', 'w') as f:
         f.write(json.dumps({seed: float(acc_arr.max(-1).item())}))
