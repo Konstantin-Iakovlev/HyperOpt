@@ -55,11 +55,14 @@ def main():
                    'cifar100': 100,
                    'svhn': 10,
                    'fmnist': 10,
+                   'mnist': 10,
                    }
     name_to_shape = {'cifar10': [32, 32, 3],
                     'cifar100': [32, 32, 3],
                     'svhn': [32, 32, 3],
-                    'fmnist': [28, 28, 1]}
+                    'fmnist': [28, 28, 1],
+                    'mnist': [28, 28, 1],
+                    }
     n_cls = name_to_cls[args.dataset]
     conv_net = hk.transform_with_state(lambda x, t: eval(args.backbone)(num_classes=n_cls)(x, t))
     unet = hk.transform(lambda x, r: Unet(name_to_shape[args.dataset][-1], 3)(x, r))

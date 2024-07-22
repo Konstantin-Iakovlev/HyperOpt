@@ -26,17 +26,21 @@ def get_dataloaders(batch_size: int, num_samples, ds_name='cifar10'):
     name_to_cls = {'cifar10': torchvision.datasets.CIFAR10,
                    'cifar100': torchvision.datasets.CIFAR100,
                    'svhn': torchvision.datasets.SVHN,
-                   'fmnist': torchvision.datasets.FashionMNIST
+                   'fmnist': torchvision.datasets.FashionMNIST,
+                   'mnist': torchvision.datasets.MNIST
                    }
     name_to_mean = {'cifar10': (0.49139968, 0.48215827, 0.44653124),
                     'cifar100': (0.5070751592371323, 0.48654887331495095, 0.4409178433670343),
                     'svhn': (0.4914, 0.4822, 0.4465),
-                    'fmnist': (0.5,)
+                    'fmnist': (0.5,),
+                    'mnist': (0.5,),
                     }
     name_to_std = {'cifar10': (0.24703233, 0.24348505, 0.26158768),
                    'cifar100': (0.2673342858792401, 0.2564384629170883, 0.27615047132568404),
                    'svhn': (0.2023, 0.1994, 0.2010),
-                   'fmnist': (0.5,)}
+                   'fmnist': (0.5,),
+                   'mnist': (0.5,),
+                   }
     class ToNumpy:
         def __call__(self, pic):
             return np.asarray(pic.permute(1, 2, 0), dtype=np.float32)
