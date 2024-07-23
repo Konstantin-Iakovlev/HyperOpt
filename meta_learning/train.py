@@ -36,8 +36,8 @@ def main():
     parser = ArgumentParser()
     parser.add_argument('--seed', type=int, required=True, default=0)
     parser.add_argument('--backbone', type=str, required=False, default='CNN')
-    parser.add_argument('--train_classes', type=int, required=False, default=50)
-    parser.add_argument('--val_classes', type=int, required=False, default=50)
+    parser.add_argument('--dataset', type=str, required=False, default='cifar100')
+    parser.add_argument('--val_ratio', type=float, required=False, default=0.2)
     parser.add_argument('--num_ways', type=int, required=True, default=5)
     parser.add_argument('--num_shots', type=int, required=True, default=1)
     parser.add_argument('--T', type=int, required=False, default=10)
@@ -60,17 +60,22 @@ def main():
     np.random.seed(seed)
     torch.manual_seed(seed)
 
-    trainset, testset = prepare_datasets()
-    data_gen = DataGenerator(trainset, testset, args.num_ways, args.num_shots, args.train_classes, args.val_classes,
+    name_to_shape = {
+                    'cifar100': [32, 32, 3],
+                    'omniglot': [32, 32, 1],
+                    }
+    trainset = prepare_datasets(ds_name=args.dataset)
+    data_gen = DataGenerator(trainset, args.num_ways, args.num_shots, args.val_ratio,
                              batch_size=args.batch_size)
     method, m_params = parse_method(args.method)
 
     state = create_bilevel_train_state(conv_net, jax.random.PRNGKey(seed),
-                                       args.inner_lr, args.outer_lr, out_steps=args.outer_steps)
+                                       args.inner_lr, args.outer_lr,
+                                       out_steps=args.outer_steps, inp_shape=name_to_shape[args.dataset])
     
     meta_grad = jax.tree_util.tree_map(jnp.zeros_like, state.h_params)
     for outer_step in tqdm(range(args.meta_batch_size * args.outer_steps)):
-        params, _ = conv_net.init(jax.random.PRNGKey(seed), jnp.ones([1, 32, 32, 3]), True)
+        params, _ = conv_net.init(jax.random.PRNGKey(seed), jnp.ones([1, *name_to_shape[args.dataset]]), True)
         w_params, _ = hk.data_structures.partition(lambda m, n, p: 'warp' not in m, params)
         inn_state = state.inner_opt.init(w_params)
         state = state.replace(w_params=w_params, inner_opt_state=inn_state)
@@ -101,7 +106,7 @@ def main():
         # eval
         if outer_step % (args.val_freq * args.meta_batch_size) == 0 and outer_step > 0:
             for _ in range(50):
-                params, _ = conv_net.init(jax.random.PRNGKey(seed), jnp.ones([1, 32, 32, 3]), True)
+                params, _ = conv_net.init(jax.random.PRNGKey(seed), jnp.ones([1, *name_to_shape[args.dataset]]), True)
                 w_params, _ = hk.data_structures.partition(lambda m, n, p: 'warp' not in m, params)
                 inn_state = state.inner_opt.init(w_params)
                 state = state.replace(w_params=w_params, inner_opt_state=inn_state)

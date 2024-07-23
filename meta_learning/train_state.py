@@ -67,9 +67,10 @@ class BiLevelTrainState(struct.PyTreeNode):
         )
 
 
-def create_bilevel_train_state(module, rng, learning_rate, outer_lr, momentum=0.9, weight_decay=0.0, out_steps=1000):
+def create_bilevel_train_state(module, rng, learning_rate, outer_lr, momentum=0.9, weight_decay=0.0,
+                               out_steps=1000, inp_shape=[32, 32, 3]):
     """Creates an initial `TrainState`."""
-    params, bn_state = module.init(rng, jnp.ones([1, 32, 32, 3]), True)
+    params, bn_state = module.init(rng, jnp.ones([1, *inp_shape]), True)
     w_params, h_params = hk.data_structures.partition(
         lambda m, n, p: 'warp' not in m, params)
     print(w_params.keys())

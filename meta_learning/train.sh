@@ -10,12 +10,13 @@ for seed in 0 1 2 3 4
 do
     python train.py --seed ${seed} \
     --backbone CNN \
+    --dataset omniglot \
     --method ${method} \
     --num_ways 2 --num_shots 80 \
-    --train_classes 70 \
-    --val_classes 30 \
-    --T 50 --outer_steps 501 \
+    --val_ratio 0.2 \
+    --T 10 --outer_steps 501 \
     --meta_batch_size 1 \
     --outer_lr 1e-4 --val_freq 100 \
-    --inner_lr 1e-1
+    --inner_lr 1e-2 \
+    --batch_size 16
 done
