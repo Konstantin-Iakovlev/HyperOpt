@@ -16,7 +16,7 @@ do
     --val_ratio 0.2 \
     --T 10 --outer_steps 1001 \
     --meta_batch_size 1 \
-    --outer_lr 1e-3 --val_freq 100 \
+    --outer_lr 1e-3 --val_freq 250 \
     --inner_lr 1e-1 \
     --batch_size 16
 done

@@ -6,8 +6,8 @@ import jax
 class WarpLayer(hk.Module):
     def __init__(self, name=None):
         super().__init__(name)
-        self.conv1 = hk.Conv2D(output_channels=32, kernel_shape=3, with_bias=False)
-        # self.conv2 = hk.Conv2D(output_channels=32, kernel_shape=3, with_bias=False)
+        self.conv1 = hk.Conv2D(output_channels=64, kernel_shape=3, with_bias=False)
+        # self.conv2 = hk.Conv2D(output_channels=64, kernel_shape=3, with_bias=False)
     
     def __call__(self, x_batch, is_training=True):
         x = self.conv1(x_batch)
@@ -24,11 +24,11 @@ class WarpLayer(hk.Module):
 class CNN(hk.Module):
     def __init__(self, num_classes=10):
         super().__init__(name="CNN")
-        self.conv1 = hk.Conv2D(output_channels=32, kernel_shape=3, with_bias=False)
+        self.conv1 = hk.Conv2D(output_channels=64, kernel_shape=3, with_bias=False)
         self.warp1 = WarpLayer(name='warp1')
-        self.conv2 = hk.Conv2D(output_channels=32, kernel_shape=3, with_bias=False)
+        self.conv2 = hk.Conv2D(output_channels=64, kernel_shape=3, with_bias=False)
         self.warp2 = WarpLayer(name='warp2')
-        self.conv3 = hk.Conv2D(output_channels=32, kernel_shape=3, with_bias=False)
+        self.conv3 = hk.Conv2D(output_channels=64, kernel_shape=3, with_bias=False)
         self.warp3 = WarpLayer(name='warp3')
         self.flatten = hk.Flatten()
         self.logits = hk.Linear(num_classes, name='logits')
