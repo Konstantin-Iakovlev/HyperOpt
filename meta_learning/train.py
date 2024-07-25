@@ -105,7 +105,7 @@ def main():
 
         # eval
         if outer_step % (args.val_freq * args.meta_batch_size) == 0 and outer_step > 0:
-            for _ in range(50):
+            for _ in range(100):
                 params, _ = conv_net.init(jax.random.PRNGKey(seed), jnp.ones([1, *name_to_shape[args.dataset]]), True)
                 w_params, _ = hk.data_structures.partition(lambda m, n, p: 'warp' not in m, params)
                 inn_state = state.inner_opt.init(w_params)

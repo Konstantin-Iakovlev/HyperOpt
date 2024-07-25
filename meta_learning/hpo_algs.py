@@ -16,6 +16,11 @@ def loss_fn(w_params, h_params, state: BiLevelTrainState, batch):
 
 
 @jax.jit
+def loss_fn_grad_params(w_params, h_params, state, batch):
+    return jax.grad(loss_fn, argnums=0, has_aux=True)(w_params, h_params, state, batch)[0]
+
+
+@jax.jit
 def compute_metrics(*, state, batch):
     params = hk.data_structures.merge(state.w_params, state.h_params)
     logits, _ = state.apply_fn(params, state.bn_state, None, batch['image'], False)
@@ -90,8 +95,7 @@ def proposed_so_grad(state, batches, val_batch, gamma, T):
     for step in range(T):
         batch = next(iter(batches))
         new_state = inner_step(state, batch)
-        curr_alpha = jax.grad(loss_fn, argnums=0, has_aux=True)(new_state.w_params,
-                                                                state.h_params, state, val_batch)[0]
+        curr_alpha = loss_fn_grad_params(new_state.w_params, state.h_params, state, val_batch)
         g_so = jax.tree_util.tree_map(lambda x, y: x * gamma ** (T - 1 - step) + y,
                                       B_jvp(state.w_params, state.h_params, batch,
                                             state, curr_alpha),
