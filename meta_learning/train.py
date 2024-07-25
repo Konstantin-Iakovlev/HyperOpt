@@ -62,7 +62,7 @@ def main():
 
     name_to_shape = {
                     'cifar100': [32, 32, 3],
-                    'omniglot': [32, 32, 1],
+                    'omniglot': [28, 28, 1],
                     }
     trainset = prepare_datasets(ds_name=args.dataset)
     data_gen = DataGenerator(trainset, args.num_ways, args.num_shots, args.val_ratio,

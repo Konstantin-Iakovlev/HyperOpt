@@ -61,7 +61,7 @@ def prepare_datasets(ds_name='cifar100'):
     transform = transforms.Compose(
         [transforms.ToTensor(),
         transforms.Normalize(mean=name_to_mean[ds_name], std=name_to_std[ds_name]),
-        transforms.Resize(32),
+        transforms.Resize(32 if ds_name == 'cifar100' else 28),
         ToNumpy()
         ])
 
