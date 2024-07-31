@@ -34,16 +34,16 @@ def parse_method(method: str):
 def main():
     parser = ArgumentParser()
     parser.add_argument('--seed', type=int, required=True, default=0)
-    parser.add_argument('--T', type=int, required=False, default=20)
-    parser.add_argument('--batch_size', type=int, required=False, default=128)
+    parser.add_argument('--T', type=int, required=False, default=10)
+    parser.add_argument('--batch_size', type=int, required=False, default=64)
     parser.add_argument('--data_size', type=int, required=False, default=1_000_000)
-    parser.add_argument('--outer_steps', type=int, required=False, default=1000)
+    parser.add_argument('--outer_steps', type=int, required=False, default=2001)
     parser.add_argument('--method', type=str, required=True, default='proposed_0.999')
     parser.add_argument('--backbone', type=str, required=False, default='ResNet18')
-    parser.add_argument('--dataset', type=str, required=False, default='cifar100')
-    parser.add_argument('--inner_lr', type=float, required=False, default=1e-1)
-    parser.add_argument('--outer_lr', type=float, required=False, default=1e-3)
-    parser.add_argument('--val_freq', type=int, required=False, default=100)
+    parser.add_argument('--dataset', type=str, required=False, default='svhn')
+    parser.add_argument('--inner_lr', type=float, required=False, default=1e-2)
+    parser.add_argument('--outer_lr', type=float, required=False, default=1e-4)
+    parser.add_argument('--val_freq', type=int, required=False, default=500)
     args = parser.parse_args()
 
     metrics_history = {seed: {'train_loss': [],
