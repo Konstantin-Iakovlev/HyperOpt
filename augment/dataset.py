@@ -29,15 +29,15 @@ def get_dataloaders(batch_size: int, num_samples, ds_name='cifar10'):
                    'fmnist': torchvision.datasets.FashionMNIST,
                    'mnist': torchvision.datasets.MNIST
                    }
-    name_to_mean = {'cifar10': (0.49139968, 0.48215827, 0.44653124),
+    name_to_mean = {'svhn': (0.49139968, 0.48215827, 0.44653124),
                     'cifar100': (0.5070751592371323, 0.48654887331495095, 0.4409178433670343),
-                    'svhn': (0.4914, 0.4822, 0.4465),
+                    'cifar10': (0.4914, 0.4822, 0.4465),
                     'fmnist': (0.5,),
                     'mnist': (0.5,),
                     }
-    name_to_std = {'cifar10': (0.24703233, 0.24348505, 0.26158768),
+    name_to_std = {'svhn': (0.24703233, 0.24348505, 0.26158768),
                    'cifar100': (0.2673342858792401, 0.2564384629170883, 0.27615047132568404),
-                   'svhn': (0.2023, 0.1994, 0.2010),
+                   'cifar10': (0.2023, 0.1994, 0.2010),
                    'fmnist': (0.5,),
                    'mnist': (0.5,),
                    }
