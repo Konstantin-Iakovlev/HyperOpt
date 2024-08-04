@@ -10,15 +10,16 @@ class LayerChoice(hk.Module):
         self.label = label
         self.ops = [
             PoolBN('max', 3, stride, affine=False),
-            PoolBN('avg', 3, stride, affine=False),
-            Identity() if stride == 1 else FactorizedReduce(channels, False),
+            # PoolBN('avg', 3, stride, affine=False),
+            # Identity() if stride == 1 else FactorizedReduce(channels, False),
             SepConv(channels, channels, 3, stride, False),
-            SepConv(channels, channels, 5, stride, False),
-            DilConv(channels, channels, 3, stride, 2, False),
-            DilConv(channels, channels, 5, stride, 2, False)
+            # SepConv(channels, channels, 5, stride, False),
+            # DilConv(channels, channels, 3, stride, 2, False),
+            # DilConv(channels, channels, 5, stride, 2, False)
         ]
-        self.op_names = ('maxpool', 'avgpool', 'skipconnect', 'sepconv3x3',
-                         'sepconv5x5', 'dilconv3x3', 'dilconv5x5')
+        # self.op_names = ('maxpool', 'avgpool', 'skipconnect', 'sepconv3x3',
+        #                  'sepconv5x5', 'dilconv3x3', 'dilconv5x5')
+        self.op_names = ('maxpool', 'sepconv3x3')
         
     def __call__(self, x, is_training):
         """x: (bs, w, h, c)"""

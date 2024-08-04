@@ -109,6 +109,7 @@ def main():
 
     acc_arr = np.stack([metrics_history[s]['test_accuracy'] for s in [seed]], axis=0)
     print('Finished with', acc_arr.max(-1))
+    print(acc_arr)
     with open(f'{args.method}_{seed}.json', 'w') as f:
         f.write(json.dumps({seed: float(acc_arr.max(-1).item())}))
 
