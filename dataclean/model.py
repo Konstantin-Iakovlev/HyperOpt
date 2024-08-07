@@ -7,7 +7,7 @@ class CNN(hk.Module):
         super().__init__(name="CNN")
         self.conv1 = hk.Conv2D(output_channels=8, kernel_shape=3, with_bias=False)
         self.bn1 = hk.BatchNorm(True, True, 0.9)
-        self.conv2 = hk.Conv2D(output_channels=16, kernel_shape=3, with_bias=False)
+        self.conv2 = hk.Conv2D(output_channels=8, kernel_shape=3, with_bias=False)
         self.bn2 = hk.BatchNorm(True, True, 0.9)
         self.conv3 = hk.Conv2D(output_channels=8, kernel_shape=3, with_bias=False)
         self.bn3 = hk.BatchNorm(True, True, 0.9)
