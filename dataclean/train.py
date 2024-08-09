@@ -3,7 +3,7 @@ import jax
 import jax.numpy as jnp
 import haiku as hk
 from haiku.nets import *
-from model import CNN
+from model import CNN, ResNet9
 from train_state import create_train_state
 from dataset import get_dataloaders_cifar
 import numpy as np
