@@ -1,5 +1,6 @@
 import jax
 import haiku as hk
+from haiku.nets import ResNet
 
 
 class CNN(hk.Module):
@@ -34,3 +35,23 @@ class CNN(hk.Module):
         x = jax.nn.relu(x)
         x = self.linear(x)
         return x
+
+
+class ResNet9(ResNet):
+    def __init__(
+        self,
+        num_classes,
+        strides=(1, 2, 2, 2),
+    ):
+        super().__init__(num_classes=num_classes,
+                         bn_config=None,
+                         initial_conv_config=None,
+                         resnet_v2=False,
+                         strides=strides,
+                         logits_config=None,
+                         name='ResNet9',
+                         blocks_per_group=(1, 1, 1, 1),
+                         bottleneck=False,
+                         channels_per_group=(64, 128, 256, 512),
+                         use_projection=(False, True, True, True),
+                         )

@@ -4,7 +4,7 @@ import jax.numpy as jnp
 import haiku as hk
 from haiku.nets import *
 from train_state import create_dw_train_state
-from model import CNN
+from model import CNN, ResNet9
 from unet import Unet
 from dataset import get_dataloaders
 import numpy as np
