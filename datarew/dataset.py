@@ -75,8 +75,13 @@ def get_dataloaders_cifar(batch_size: int, num_samples: int,
             return np.asarray(pic.permute(1, 2, 0), dtype=np.float32)
 
     train_transform = transforms.Compose([
-        # transforms.RandomCrop(32, padding=4),
-        # transforms.RandomHorizontalFlip(),
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(name_to_mean[ds_name], name_to_std[ds_name]),
+        ToNumpy(),
+    ])
+    test_transforms = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize(name_to_mean[ds_name], name_to_std[ds_name]),
         ToNumpy(),
@@ -109,9 +114,9 @@ def get_dataloaders_cifar(batch_size: int, num_samples: int,
     valloader = DataLoader(torch.utils.data.Subset(train_data, range(split, len(train_data))),
                            batch_size=batch_size, shuffle=True, drop_last=True, collate_fn=numpy_collate)
     try:
-        test_data = ds_cls(root='./data', train=False, download=True, transform=train_transform)
+        test_data = ds_cls(root='./data', train=False, download=True, transform=test_transforms)
     except:
-        test_data = ds_cls(root='./data', split='test', download=True, transform=train_transform)
+        test_data = ds_cls(root='./data', split='test', download=True, transform=test_transforms)
     testloader = DataLoader(test_data, batch_size=batch_size, shuffle=False, drop_last=False,
                             collate_fn=numpy_collate)
 

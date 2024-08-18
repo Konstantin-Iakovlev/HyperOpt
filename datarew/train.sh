@@ -10,7 +10,7 @@ for seed in 0 1 2 3 4
 do
     python train.py --seed ${seed} --imb_fact 50 \
     --method ${method} \
-    --T 5 --outer_steps 2001 --dataset cifar10 --data_size 1_000_000 \
-    --outer_lr 1e-5 --wnet_hidden 100 --val_freq 500 --backbone ResNet18 \
+    --T 10 --outer_steps 5001 --dataset fmnist --data_size 1_000_000 \
+    --outer_lr 1e-5 --wnet_hidden 100 --val_freq 500 --backbone ResNet9 \
     --inner_lr 1e-1 --batch_size 128
 done
