@@ -50,7 +50,7 @@ def get_dataloaders_fmnist(corruption: float, batch_size: int):
 
 
 def get_dataloaders_cifar(batch_size: int, num_samples: int,
-                          imbalance_factor=1, ds_name='cifar10'):
+                          imbalance_factor=1, corr_rate=0.0, ds_name='cifar10'):
     name_to_cls = {'cifar10': torchvision.datasets.CIFAR10,
                    'cifar100': torchvision.datasets.CIFAR100,
                    'svhn': torchvision.datasets.SVHN,
@@ -75,8 +75,8 @@ def get_dataloaders_cifar(batch_size: int, num_samples: int,
             return np.asarray(pic.permute(1, 2, 0), dtype=np.float32)
 
     train_transform = transforms.Compose([
-        transforms.RandomCrop(32, padding=4),
-        transforms.RandomHorizontalFlip(),
+        # transforms.RandomCrop(32, padding=4),
+        # transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize(name_to_mean[ds_name], name_to_std[ds_name]),
         ToNumpy(),
@@ -90,9 +90,11 @@ def get_dataloaders_cifar(batch_size: int, num_samples: int,
     np.random.seed(0)
     ds_cls = name_to_cls[ds_name]
     try:
-        train_data = ds_cls(root='./data', train=True, download=True, transform=train_transform)
+        train_data = ds_cls(root='./data', train=True, download=True, transform=train_transform,
+                            target_transform=lambda y: y if np.random.rand() <= 1 - corr_rate else np.random.choice(10))
     except:
-        train_data = ds_cls(root='./data', split='train', download=True, transform=train_transform)
+        train_data = ds_cls(root='./data', split='train', download=True, transform=train_transform,
+                            target_transform=lambda y: y if np.random.rand() <= 1 - corr_rate else np.random.choice(10))
 
     ids = np.random.choice(len(train_data), size=(min(num_samples, len(train_data)),), replace=False)
     train_data = [train_data[i] for i in ids]
@@ -121,4 +123,3 @@ def get_dataloaders_cifar(batch_size: int, num_samples: int,
                             collate_fn=numpy_collate)
 
     return trainloader, valloader, testloader
-

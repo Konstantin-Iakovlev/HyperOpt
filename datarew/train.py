@@ -35,6 +35,7 @@ def main():
     parser = ArgumentParser()
     parser.add_argument('--seed', type=int, required=True, default=0)
     parser.add_argument('--imb_fact', type=int, required=True, default=1)
+    parser.add_argument('--corr_rate', type=float, required=True, default=0.0)
     parser.add_argument('--T', type=int, required=False, default=20)
     parser.add_argument('--batch_size', type=int, required=False, default=128)
     parser.add_argument('--data_size', type=int, required=False, default=1_000_000)
@@ -66,7 +67,7 @@ def main():
     else:
         conv_net = hk.transform_with_state(lambda x, t: eval(args.backbone)(num_classes=n_cls)(x, t))
     wnet = hk.transform(lambda x: jax.nn.sigmoid(MLP([args.wnet_hidden, 1],
-                                            activation=jax.nn.relu, activate_final=False)(x)))
+                                            activation=jax.nn.tanh, activate_final=False)(x)))
 
     seed = args.seed
     np.random.seed(seed)
@@ -78,6 +79,7 @@ def main():
     trainloader, valloader, testloader = get_dataloaders_cifar(batch_size=args.batch_size,
                                                                num_samples=args.data_size,
                                                                imbalance_factor=args.imb_fact,
+                                                               corr_rate=args.corr_rate,
                                                                ds_name=args.dataset)
     method, m_params = parse_method(args.method)
     for outer_step in tqdm(range(args.outer_steps)):
