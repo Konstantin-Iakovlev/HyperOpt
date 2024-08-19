@@ -90,14 +90,12 @@ def get_dataloaders_cifar(batch_size: int, num_samples: int,
     np.random.seed(0)
     ds_cls = name_to_cls[ds_name]
     try:
-        train_data = ds_cls(root='./data', train=True, download=True, transform=train_transform,
-                            target_transform=lambda y: y if np.random.rand() <= 1 - corr_rate else np.random.choice(10))
+        train_data = ds_cls(root='./data', train=True, download=True, transform=train_transform)
     except:
-        train_data = ds_cls(root='./data', split='train', download=True, transform=train_transform,
-                            target_transform=lambda y: y if np.random.rand() <= 1 - corr_rate else np.random.choice(10))
+        train_data = ds_cls(root='./data', split='train', download=True, transform=train_transform)
 
     ids = np.random.choice(len(train_data), size=(min(num_samples, len(train_data)),), replace=False)
-    train_data = [train_data[i] for i in ids]
+    train_data = [(train_data[i][0], np.random.choice(10) if np.random.rand() <= corr_rate else train_data[i][1]) for i in ids]
     num_train = len(train_data)
     split = int(np.floor(num_train * 0.8))
 
