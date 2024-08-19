@@ -95,9 +95,11 @@ def get_dataloaders_cifar(batch_size: int, num_samples: int,
         train_data = ds_cls(root='./data', split='train', download=True, transform=train_transform)
 
     ids = np.random.choice(len(train_data), size=(min(num_samples, len(train_data)),), replace=False)
-    train_data = [(train_data[i][0], np.random.choice(10) if np.random.rand() <= corr_rate else train_data[i][1]) for i in ids]
     num_train = len(train_data)
     split = int(np.floor(num_train * 0.8))
+    valloader = DataLoader(torch.utils.data.Subset(train_data, range(split, len(train_data))),
+                           batch_size=batch_size, shuffle=True, drop_last=True, collate_fn=numpy_collate)
+    train_data = [(train_data[i][0], np.random.choice(10) if np.random.rand() <= corr_rate else train_data[i][1]) for i in ids]
 
     train_ds = torch.utils.data.Subset(train_data, range(split))
     n_cls = 100 if ds_name == 'cifar100' else 10
@@ -111,8 +113,6 @@ def get_dataloaders_cifar(batch_size: int, num_samples: int,
     trainloader = DataLoader(train_ds, batch_size=batch_size,
                              shuffle=True, drop_last=True, collate_fn=numpy_collate)
 
-    valloader = DataLoader(torch.utils.data.Subset(train_data, range(split, len(train_data))),
-                           batch_size=batch_size, shuffle=True, drop_last=True, collate_fn=numpy_collate)
     try:
         test_data = ds_cls(root='./data', train=False, download=True, transform=test_transforms)
     except:
