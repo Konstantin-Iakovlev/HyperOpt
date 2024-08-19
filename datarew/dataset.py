@@ -75,8 +75,8 @@ def get_dataloaders_cifar(batch_size: int, num_samples: int,
             return np.asarray(pic.permute(1, 2, 0), dtype=np.float32)
 
     train_transform = transforms.Compose([
-        # transforms.RandomCrop(32, padding=4),
-        # transforms.RandomHorizontalFlip(),
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize(name_to_mean[ds_name], name_to_std[ds_name]),
         ToNumpy(),

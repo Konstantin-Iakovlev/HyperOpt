@@ -76,12 +76,12 @@ class DataWTrainState(struct.PyTreeNode):
         
 
 def create_dw_train_state(module, wnet, rng, inner_steps, learning_rate=0.025, momentum=0.9, w_decay=0.0,
-                               alpha_lr=1e-4, alpha_decay=1e-4, input_shape=[28, 28, 1]):
+                               alpha_lr=1e-4, alpha_decay=0.0, input_shape=[28, 28, 1]):
     """Creates an initial `TrainState`."""
     w_params, bn_state = module.init(rng, jnp.ones([1] + input_shape), True)
     h_params = wnet.init(rng, jnp.ones([32, 1]))
-    # sch = optax.cosine_decay_schedule(learning_rate, inner_steps)
-    sch = optax.constant_schedule(learning_rate)
+    sch = optax.cosine_decay_schedule(learning_rate, inner_steps)
+    # sch = optax.constant_schedule(learning_rate)
     tx_inner = optax.chain(optax.add_decayed_weights(w_decay),
                            optax.sgd(sch, momentum=momentum))
     tx_outer = optax.chain(optax.add_decayed_weights(alpha_decay),
