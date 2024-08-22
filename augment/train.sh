@@ -6,7 +6,7 @@ method=baseline
 for seed in 0 1 2 3 4
 do
     python train.py \
-    --backbone CNN \
+    --backbone WideResNet \
     --dataset svhn \
     --T 10 \
     --seed ${seed} \

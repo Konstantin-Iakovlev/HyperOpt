@@ -5,6 +5,7 @@ import haiku as hk
 from haiku.nets import *
 from train_state import create_dw_train_state
 from model import CNN, ResNet9
+from wide_res_net import WideResNet
 from unet import Unet
 from dataset import get_dataloaders
 import numpy as np
@@ -64,7 +65,11 @@ def main():
                     'mnist': [28, 28, 1],
                     }
     n_cls = name_to_cls[args.dataset]
-    conv_net = hk.transform_with_state(lambda x, t: eval(args.backbone)(num_classes=n_cls)(x, t))
+    if args.backbone == 'WideResNet':
+        conv_net = hk.transform_with_state(lambda x, t: WideResNet(num_classes=n_cls,
+                                                                   depth=16, width=2)(x, is_training=t))
+    else:
+        conv_net = hk.transform_with_state(lambda x, t: eval(args.backbone)(num_classes=n_cls)(x, t))
     unet = hk.transform(lambda x, r: Unet(name_to_shape[args.dataset][-1], 3)(x, r))
 
     seed = args.seed
